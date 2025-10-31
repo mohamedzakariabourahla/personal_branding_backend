@@ -1,5 +1,6 @@
 package saas.personal_branding.api.presentation.mapper;
 
+import saas.personal_branding.api.application.service.AuthService;
 import saas.personal_branding.api.domain.model.*;
 import saas.personal_branding.api.presentation.dto.response.*;
 
@@ -90,5 +91,17 @@ public final class UserDtoMapper {
         return countries.stream()
                 .map(country -> new CountryResponse(country.getId(), country.getName(), country.getIsoCode()))
                 .collect(Collectors.toUnmodifiableSet());
+    }
+
+    public static AuthResponse toAuthResponse(AuthService.AuthResult authResult) {
+        return new AuthResponse(
+                toUserResponse(authResult.user()),
+                new TokenResponse(
+                        authResult.accessToken(),
+                        authResult.refreshToken(),
+                        authResult.refreshTokenExpiresAt(),
+                        "Bearer"
+                )
+        );
     }
 }

@@ -86,6 +86,55 @@ public class ReferenceDataRepositoryAdapter implements ReferenceDataRepository {
                 .build());
     }
 
+    @Override
+    public Set<Niche> findAllNiches() {
+        return mapAll(jpaNicheRepository.findAll(), entity -> Niche.builder()
+                .id(entity.getId())
+                .name(entity.getName())
+                .build());
+    }
+
+    @Override
+    public Set<Audience> findAllAudiences() {
+        return mapAll(jpaAudienceRepository.findAll(), entity -> Audience.builder()
+                .id(entity.getId())
+                .name(entity.getName())
+                .build());
+    }
+
+    @Override
+    public Set<Tone> findAllTones() {
+        return mapAll(jpaToneRepository.findAll(), entity -> Tone.builder()
+                .id(entity.getId())
+                .name(entity.getName())
+                .build());
+    }
+
+    @Override
+    public Set<Platform> findAllPlatforms() {
+        return mapAll(jpaPlatformRepository.findAll(), entity -> Platform.builder()
+                .id(entity.getId())
+                .name(entity.getName())
+                .build());
+    }
+
+    @Override
+    public Set<Country> findAllCountries() {
+        return mapAll(jpaCountryRepository.findAll(), entity -> Country.builder()
+                .id(entity.getId())
+                .name(entity.getName())
+                .isoCode(entity.getIsoCode())
+                .build());
+    }
+
+    @Override
+    public Set<PostingFrequency> findAllPostingFrequencies() {
+        return mapAll(jpaPostingFrequencyRepository.findAll(), entity -> PostingFrequency.builder()
+                .id(entity.getId())
+                .name(entity.getName())
+                .build());
+    }
+
     private <E extends ReferenceDataEntity, D> Set<D> loadAndMap(Set<Long> ids,
                                                                  Function<Iterable<Long>, Iterable<E>> loader,
                                                                  Function<E, D> mapper) {
@@ -94,6 +143,12 @@ public class ReferenceDataRepositoryAdapter implements ReferenceDataRepository {
         }
 
         Iterable<E> entities = loader.apply(ids);
+        return StreamSupport.stream(entities.spliterator(), false)
+                .map(mapper)
+                .collect(Collectors.toUnmodifiableSet());
+    }
+
+    private <E extends ReferenceDataEntity, D> Set<D> mapAll(Iterable<E> entities, Function<E, D> mapper) {
         return StreamSupport.stream(entities.spliterator(), false)
                 .map(mapper)
                 .collect(Collectors.toUnmodifiableSet());

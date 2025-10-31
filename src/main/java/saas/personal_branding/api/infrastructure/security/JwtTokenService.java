@@ -1,0 +1,72 @@
+package saas.personal_branding.api.infrastructure.security;
+
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
+import org.springframework.stereotype.Component;
+import saas.personal_branding.api.application.service.TokenService;
+import saas.personal_branding.api.application.service.dto.TokenClaims;
+import saas.personal_branding.api.domain.model.Role;
+import saas.personal_branding.api.domain.model.User;
+
+import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Date;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+@Component
+public class JwtTokenService implements TokenService {
+
+    private final Clock clock;
+    private final SecretKey secretKey;
+    private final Duration accessTokenTtl;
+    private final String issuer;
+
+    public JwtTokenService(JwtProperties properties, Clock clock) {
+        this.clock = clock;
+        this.secretKey = Keys.hmacShaKeyFor(properties.secret().getBytes(StandardCharsets.UTF_8));
+        this.accessTokenTtl = properties.accessTokenTtl() != null ? properties.accessTokenTtl() : Duration.ofMinutes(15);
+        this.issuer = properties.issuer();
+    }
+
+    @Override
+    public String generateAccessToken(User user) {
+        Instant now = clock.instant();
+        Instant expiry = now.plus(accessTokenTtl);
+
+        return Jwts.builder()
+                .subject(String.valueOf(user.getId()))
+                .issuer(issuer)
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(expiry))
+                .claim("email", user.getEmail())
+                .claim("roles", user.getRoles().stream().map(Role::name).toList())
+                .signWith(secretKey)
+                .compact();
+    }
+
+    @Override
+    public TokenClaims parseAccessToken(String token) {
+        Claims claims = Jwts.parser()
+                .verifyWith(secretKey)
+                .requireIssuer(issuer)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
+
+        Long userId = Long.valueOf(claims.getSubject());
+        String email = claims.get("email", String.class);
+
+        @SuppressWarnings("unchecked")
+        java.util.List<String> roleNames = claims.get("roles", java.util.List.class);
+        Set<Role> roles = roleNames == null ? Set.of() : roleNames.stream()
+                .map(Role::valueOf)
+                .collect(Collectors.toUnmodifiableSet());
+
+        return new TokenClaims(userId, email, roles);
+    }
+}

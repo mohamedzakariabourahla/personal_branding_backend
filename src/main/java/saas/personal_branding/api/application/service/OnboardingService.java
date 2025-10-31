@@ -33,6 +33,10 @@ public class OnboardingService {
         User user = userRepository.findById(command.userId())
                 .orElseThrow(() -> new UserException.UserNotFoundException(command.userId()));
 
+        if (!user.isActive()) {
+            throw new UserException.InactiveAccountException(user.getId());
+        }
+
         if (user.isOnboardingCompleted()) {
             throw new UserException.OnboardingAlreadyCompletedException(user.getId());
         }
@@ -87,7 +91,7 @@ public class OnboardingService {
                                                    Set<ID> requestedIds,
                                                    Set<T> foundEntities,
                                                    Function<T, ID> idExtractor) {
-        Set<ID> normalizedRequested = requestedIds == null ? Set.of() : requestedIds;
+        Set<ID> normalizedRequested = requestedIds == null ? Set.of() : Set.copyOf(requestedIds);
         if (normalizedRequested.isEmpty()) {
             return;
         }
@@ -101,7 +105,7 @@ public class OnboardingService {
             Set<ID> missing = normalizedRequested.stream()
                     .filter(id -> !foundIds.contains(id))
                     .collect(Collectors.toSet());
-            throw new ReferenceDataException.ReferenceDataNotFoundException(type, (Iterable<Long>) missing);
+            throw new ReferenceDataException.ReferenceDataNotFoundException(type, missing);
         }
     }
 

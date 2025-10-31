@@ -11,4 +11,11 @@ public interface ReferenceDataRepository {
     Set<Platform> findPlatformsByIds(Set<Long> ids);
     Set<Country> findCountriesByIds(Set<Long> ids);
     Set<PostingFrequency> findPostingFrequenciesByIds(Set<Long> ids);
+
+    Set<Niche> findAllNiches();
+    Set<Audience> findAllAudiences();
+    Set<Tone> findAllTones();
+    Set<Platform> findAllPlatforms();
+    Set<Country> findAllCountries();
+    Set<PostingFrequency> findAllPostingFrequencies();
 }

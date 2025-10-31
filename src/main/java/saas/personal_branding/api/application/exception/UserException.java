@@ -25,4 +25,10 @@ public class UserException {
             super("Onboarding already completed for user id: " + userId, "ONBOARDING_ALREADY_COMPLETED");
         }
     }
+
+    public static class InactiveAccountException extends BusinessException {
+        public InactiveAccountException(Long userId) {
+            super("Account is inactive for user id: " + userId, "USER_INACTIVE");
+        }
+    }
 }

@@ -2,24 +2,45 @@ package saas.personal_branding.api.application.service;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
+import saas.personal_branding.api.application.exception.TokenException;
 import saas.personal_branding.api.application.exception.UserException;
 import saas.personal_branding.api.domain.model.OnboardingStatus;
+import saas.personal_branding.api.domain.model.RefreshToken;
 import saas.personal_branding.api.domain.model.Role;
 import saas.personal_branding.api.domain.model.User;
+import saas.personal_branding.api.domain.repository.RefreshTokenRepository;
 import saas.personal_branding.api.domain.repository.UserRepository;
+
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.UUID;
 
 @Transactional
 public class AuthService {
 
     private final UserRepository userRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
+    private final TokenService tokenService;
+    private final Clock clock;
+    private final Duration refreshTokenTtl;
 
-    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public AuthService(UserRepository userRepository,
+                       RefreshTokenRepository refreshTokenRepository,
+                       PasswordEncoder passwordEncoder,
+                       TokenService tokenService,
+                       Clock clock,
+                       Duration refreshTokenTtl) {
         this.userRepository = userRepository;
+        this.refreshTokenRepository = refreshTokenRepository;
         this.passwordEncoder = passwordEncoder;
+        this.tokenService = tokenService;
+        this.clock = clock;
+        this.refreshTokenTtl = refreshTokenTtl;
     }
 
-    public User register(RegisterUserCommand command) {
+    public AuthResult register(RegisterUserCommand command) {
         if (userRepository.existsByEmail(command.email())) {
             throw new UserException.EmailAlreadyExistsException(command.email());
         }
@@ -34,13 +55,18 @@ public class AuthService {
                 .role(Role.CLIENT)
                 .build();
 
-        return userRepository.save(user);
+        User saved = userRepository.save(user);
+        return issueTokensFor(saved);
     }
 
     @Transactional(readOnly = true)
-    public User authenticate(LoginCommand command) {
+    public User authenticateUser(LoginCommand command) {
         User user = userRepository.findByEmail(command.email())
                 .orElseThrow(UserException.InvalidCredentialsException::new);
+
+        if (!user.isActive()) {
+            throw new UserException.InactiveAccountException(user.getId());
+        }
 
         if (!passwordEncoder.matches(command.password(), user.getPasswordHash())) {
             throw new UserException.InvalidCredentialsException();
@@ -49,9 +75,61 @@ public class AuthService {
         return user;
     }
 
+    public AuthResult authenticate(LoginCommand command) {
+        User user = authenticateUser(command);
+        return issueTokensFor(user);
+    }
+
+    public AuthResult refreshTokens(RefreshTokenCommand command) {
+        RefreshToken refreshToken = refreshTokenRepository.findActiveByToken(command.refreshToken())
+                .orElseThrow(TokenException.RefreshTokenNotFoundException::new);
+
+        if (refreshToken.isExpired(clock.instant())) {
+            refreshTokenRepository.revokeById(refreshToken.getId());
+            throw new TokenException.RefreshTokenExpiredException();
+        }
+
+        User user = userRepository.findById(refreshToken.getUserId())
+                .orElseThrow(() -> new UserException.UserNotFoundException(refreshToken.getUserId()));
+
+        if (!user.isActive()) {
+            refreshTokenRepository.revokeById(refreshToken.getId());
+            throw new UserException.InactiveAccountException(user.getId());
+        }
+
+        refreshTokenRepository.revokeById(refreshToken.getId());
+        return issueTokensFor(user);
+    }
+
+    private AuthResult issueTokensFor(User user) {
+        refreshTokenRepository.revokeAllByUserId(user.getId());
+        String accessToken = tokenService.generateAccessToken(user);
+        RefreshToken refreshToken = refreshTokenRepository.save(createRefreshToken(user.getId()));
+
+        return new AuthResult(user, accessToken, refreshToken.getToken(), refreshToken.getExpiresAt());
+    }
+
+    private RefreshToken createRefreshToken(Long userId) {
+        Instant now = clock.instant();
+        Instant expiry = now.plus(refreshTokenTtl);
+        return RefreshToken.builder()
+                .userId(userId)
+                .token(UUID.randomUUID().toString())
+                .expiresAt(expiry)
+                .createdAt(now)
+                .revoked(false)
+                .build();
+    }
+
     public record RegisterUserCommand(String email, String password) {
     }
 
     public record LoginCommand(String email, String password) {
+    }
+
+    public record RefreshTokenCommand(String refreshToken) {
+    }
+
+    public record AuthResult(User user, String accessToken, String refreshToken, Instant refreshTokenExpiresAt) {
     }
 }

@@ -1,6 +1,9 @@
 package saas.personal_branding.api.presentation.controller;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -15,6 +18,7 @@ import saas.personal_branding.api.presentation.mapper.UserDtoMapper;
 
 @RestController
 @RequestMapping("/api/onboarding")
+@Validated
 public class OnboardingController {
 
     private final OnboardingService onboardingService;
@@ -24,8 +28,8 @@ public class OnboardingController {
     }
 
     @PostMapping("/{userId}")
-    public ResponseEntity<PersonResponse> completeOnboarding(@PathVariable Long userId,
-                                                             @RequestBody OnboardingRequest request) {
+    public ResponseEntity<PersonResponse> completeOnboarding(@PathVariable @Positive Long userId,
+                                                             @Valid @RequestBody OnboardingRequest request) {
         Person person = onboardingService.completeOnboarding(new OnboardingService.CompleteOnboardingCommand(
                 userId,
                 request.getFullName(),
@@ -46,7 +50,7 @@ public class OnboardingController {
     }
 
     @GetMapping("/{userId}")
-    public ResponseEntity<PersonResponse> getOnboarding(@PathVariable Long userId) {
+    public ResponseEntity<PersonResponse> getOnboarding(@PathVariable @Positive Long userId) {
         return onboardingService.findPersonByUserId(userId)
                 .map(UserDtoMapper::toPersonResponse)
                 .map(ResponseEntity::ok)
