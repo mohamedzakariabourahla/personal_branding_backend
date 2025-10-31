@@ -2,6 +2,8 @@ package saas.personal_branding.api.presentation.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
@@ -37,20 +39,20 @@ public class OnboardingRequest {
     private String fontStyle;
 
     @NotEmpty
-    private Set<Long> nicheIds;
+    private Set<@NotNull @Positive Long> nicheIds;
 
     @NotEmpty
-    private Set<Long> audienceIds;
+    private Set<@NotNull @Positive Long> audienceIds;
 
     @NotEmpty
-    private Set<Long> toneIds;
+    private Set<@NotNull @Positive Long> toneIds;
 
     @NotEmpty
-    private Set<Long> platformIds;
+    private Set<@NotNull @Positive Long> platformIds;
 
     @NotEmpty
-    private Set<Long> countryIds;
+    private Set<@NotNull @Positive Long> countryIds;
 
     @NotEmpty
-    private Set<Long> postingFrequencyIds;
+    private Set<@NotNull @Positive Long> postingFrequencyIds;
 }

@@ -8,5 +8,5 @@ public interface RefreshTokenRepository {
     RefreshToken save(RefreshToken token);
     void revokeAllByUserId(Long userId);
     void revokeById(Long tokenId);
-    Optional<RefreshToken> findActiveByToken(String token);
+    Optional<RefreshToken> findActiveByTokenHash(String tokenHash);
 }

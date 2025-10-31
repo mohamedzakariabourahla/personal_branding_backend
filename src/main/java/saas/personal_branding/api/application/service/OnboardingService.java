@@ -41,27 +41,27 @@ public class OnboardingService {
             throw new UserException.OnboardingAlreadyCompletedException(user.getId());
         }
 
-        Set<Long> nicheIds = defaultIds(command.nicheIds());
+        Set<Long> nicheIds = defaultIds(command.nicheIds(), "nicheIds");
         Set<Niche> niches = referenceDataRepository.findNichesByIds(nicheIds);
         ensureAllRequestedPresent("Niche", nicheIds, niches, Niche::getId);
 
-        Set<Long> audienceIds = defaultIds(command.audienceIds());
+        Set<Long> audienceIds = defaultIds(command.audienceIds(), "audienceIds");
         Set<Audience> audiences = referenceDataRepository.findAudiencesByIds(audienceIds);
         ensureAllRequestedPresent("Audience", audienceIds, audiences, Audience::getId);
 
-        Set<Long> toneIds = defaultIds(command.toneIds());
+        Set<Long> toneIds = defaultIds(command.toneIds(), "toneIds");
         Set<Tone> tones = referenceDataRepository.findTonesByIds(toneIds);
         ensureAllRequestedPresent("Tone", toneIds, tones, Tone::getId);
 
-        Set<Long> platformIds = defaultIds(command.platformIds());
+        Set<Long> platformIds = defaultIds(command.platformIds(), "platformIds");
         Set<Platform> platforms = referenceDataRepository.findPlatformsByIds(platformIds);
         ensureAllRequestedPresent("Platform", platformIds, platforms, Platform::getId);
 
-        Set<Long> countryIds = defaultIds(command.countryIds());
+        Set<Long> countryIds = defaultIds(command.countryIds(), "countryIds");
         Set<Country> countries = referenceDataRepository.findCountriesByIds(countryIds);
         ensureAllRequestedPresent("Country", countryIds, countries, Country::getId);
 
-        Set<Long> postingFrequencyIds = defaultIds(command.postingFrequencyIds());
+        Set<Long> postingFrequencyIds = defaultIds(command.postingFrequencyIds(), "postingFrequencyIds");
         Set<PostingFrequency> postingFrequencies = referenceDataRepository.findPostingFrequenciesByIds(postingFrequencyIds);
         ensureAllRequestedPresent("PostingFrequency", postingFrequencyIds, postingFrequencies, PostingFrequency::getId);
 
@@ -109,8 +109,17 @@ public class OnboardingService {
         }
     }
 
-    private Set<Long> defaultIds(Set<Long> ids) {
-        return ids == null ? Set.of() : Set.copyOf(ids);
+    private Set<Long> defaultIds(Set<Long> ids, String fieldName) {
+        if (ids == null) {
+            return Set.of();
+        }
+        Set<Long> sanitized = ids.stream()
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        if (sanitized.size() != ids.size()) {
+            throw new IllegalArgumentException("Property '%s' contains null elements".formatted(fieldName));
+        }
+        return Set.copyOf(sanitized);
     }
 
     @Transactional(readOnly = true)

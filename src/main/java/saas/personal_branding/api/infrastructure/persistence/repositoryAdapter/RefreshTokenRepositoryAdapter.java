@@ -35,7 +35,7 @@ public class RefreshTokenRepositoryAdapter implements RefreshTokenRepository {
                 : new RefreshTokenEntity();
 
         entity.setUser(userEntity);
-        entity.setToken(token.getToken());
+        entity.setTokenHash(token.getTokenHash());
         entity.setExpiresAt(token.getExpiresAt());
         entity.setRevoked(token.isRevoked());
         entity.setCreatedAt(token.getCreatedAt() != null ? token.getCreatedAt() : Instant.now());
@@ -56,8 +56,8 @@ public class RefreshTokenRepositoryAdapter implements RefreshTokenRepository {
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<RefreshToken> findActiveByToken(String token) {
-        return jpaRefreshTokenRepository.findByTokenAndRevokedFalse(token)
+    public Optional<RefreshToken> findActiveByTokenHash(String tokenHash) {
+        return jpaRefreshTokenRepository.findByTokenHashAndRevokedFalse(tokenHash)
                 .map(this::toDomain);
     }
 
@@ -69,7 +69,7 @@ public class RefreshTokenRepositoryAdapter implements RefreshTokenRepository {
         return RefreshToken.builder()
                 .id(entity.getId())
                 .userId(entity.getUser() != null ? entity.getUser().getId() : null)
-                .token(entity.getToken())
+                .tokenHash(entity.getTokenHash())
                 .expiresAt(entity.getExpiresAt())
                 .revoked(entity.isRevoked())
                 .createdAt(entity.getCreatedAt())

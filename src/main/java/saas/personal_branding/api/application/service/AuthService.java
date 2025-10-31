@@ -23,6 +23,7 @@ public class AuthService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final TokenService tokenService;
+    private final TokenHashService tokenHashService;
     private final Clock clock;
     private final Duration refreshTokenTtl;
 
@@ -30,12 +31,14 @@ public class AuthService {
                        RefreshTokenRepository refreshTokenRepository,
                        PasswordEncoder passwordEncoder,
                        TokenService tokenService,
+                       TokenHashService tokenHashService,
                        Clock clock,
                        Duration refreshTokenTtl) {
         this.userRepository = userRepository;
         this.refreshTokenRepository = refreshTokenRepository;
         this.passwordEncoder = passwordEncoder;
         this.tokenService = tokenService;
+        this.tokenHashService = tokenHashService;
         this.clock = clock;
         this.refreshTokenTtl = refreshTokenTtl;
     }
@@ -81,7 +84,8 @@ public class AuthService {
     }
 
     public AuthResult refreshTokens(RefreshTokenCommand command) {
-        RefreshToken refreshToken = refreshTokenRepository.findActiveByToken(command.refreshToken())
+        String tokenHash = tokenHashService.hash(command.refreshToken());
+        RefreshToken refreshToken = refreshTokenRepository.findActiveByTokenHash(tokenHash)
                 .orElseThrow(TokenException.RefreshTokenNotFoundException::new);
 
         if (refreshToken.isExpired(clock.instant())) {
@@ -104,17 +108,19 @@ public class AuthService {
     private AuthResult issueTokensFor(User user) {
         refreshTokenRepository.revokeAllByUserId(user.getId());
         String accessToken = tokenService.generateAccessToken(user);
-        RefreshToken refreshToken = refreshTokenRepository.save(createRefreshToken(user.getId()));
+        String rawRefreshToken = UUID.randomUUID().toString();
+        String refreshTokenHash = tokenHashService.hash(rawRefreshToken);
+        RefreshToken refreshToken = refreshTokenRepository.save(createRefreshToken(user.getId(), refreshTokenHash));
 
-        return new AuthResult(user, accessToken, refreshToken.getToken(), refreshToken.getExpiresAt());
+        return new AuthResult(user, accessToken, rawRefreshToken, refreshToken.getExpiresAt());
     }
 
-    private RefreshToken createRefreshToken(Long userId) {
+    private RefreshToken createRefreshToken(Long userId, String tokenHash) {
         Instant now = clock.instant();
         Instant expiry = now.plus(refreshTokenTtl);
         return RefreshToken.builder()
                 .userId(userId)
-                .token(UUID.randomUUID().toString())
+                .tokenHash(tokenHash)
                 .expiresAt(expiry)
                 .createdAt(now)
                 .revoked(false)

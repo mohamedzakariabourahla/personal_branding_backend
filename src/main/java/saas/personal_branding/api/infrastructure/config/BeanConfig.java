@@ -6,6 +6,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import saas.personal_branding.api.application.service.AuthService;
 import saas.personal_branding.api.application.service.OnboardingService;
 import saas.personal_branding.api.application.service.ReferenceDataService;
+import saas.personal_branding.api.application.service.TokenHashService;
 import saas.personal_branding.api.application.service.TokenService;
 import saas.personal_branding.api.domain.repository.PersonRepository;
 import saas.personal_branding.api.domain.repository.ReferenceDataRepository;
@@ -23,12 +24,13 @@ public class BeanConfig {
                                   RefreshTokenRepository refreshTokenRepository,
                                   PasswordEncoder passwordEncoder,
                                   TokenService tokenService,
+                                  TokenHashService tokenHashService,
                                   Clock clock,
                                   JwtProperties jwtProperties) {
         java.time.Duration refreshTtl = jwtProperties.refreshTokenTtl() != null
                 ? jwtProperties.refreshTokenTtl()
                 : java.time.Duration.ofDays(7);
-        return new AuthService(userRepository, refreshTokenRepository, passwordEncoder, tokenService, clock, refreshTtl);
+        return new AuthService(userRepository, refreshTokenRepository, passwordEncoder, tokenService, tokenHashService, clock, refreshTtl);
     }
 
     @Bean

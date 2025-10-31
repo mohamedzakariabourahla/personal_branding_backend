@@ -1,11 +1,10 @@
 package saas.personal_branding.api.presentation.controller;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Positive;
+import saas.personal_branding.api.application.service.AuthenticatedUserProvider;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -22,14 +21,16 @@ import saas.personal_branding.api.presentation.mapper.UserDtoMapper;
 public class OnboardingController {
 
     private final OnboardingService onboardingService;
+    private final AuthenticatedUserProvider authenticatedUserProvider;
 
-    public OnboardingController(OnboardingService onboardingService) {
+    public OnboardingController(OnboardingService onboardingService, AuthenticatedUserProvider authenticatedUserProvider) {
         this.onboardingService = onboardingService;
+        this.authenticatedUserProvider = authenticatedUserProvider;
     }
 
-    @PostMapping("/{userId}")
-    public ResponseEntity<PersonResponse> completeOnboarding(@PathVariable @Positive Long userId,
-                                                             @Valid @RequestBody OnboardingRequest request) {
+    @PostMapping
+    public ResponseEntity<PersonResponse> completeOnboarding(@Valid @RequestBody OnboardingRequest request) {
+        Long userId = authenticatedUserProvider.getCurrentUserId();
         Person person = onboardingService.completeOnboarding(new OnboardingService.CompleteOnboardingCommand(
                 userId,
                 request.getFullName(),
@@ -49,11 +50,13 @@ public class OnboardingController {
         return ResponseEntity.ok(UserDtoMapper.toPersonResponse(person));
     }
 
-    @GetMapping("/{userId}")
-    public ResponseEntity<PersonResponse> getOnboarding(@PathVariable @Positive Long userId) {
+    @GetMapping
+    public ResponseEntity<PersonResponse> getOnboarding() {
+        Long userId = authenticatedUserProvider.getCurrentUserId();
         return onboardingService.findPersonByUserId(userId)
                 .map(UserDtoMapper::toPersonResponse)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
+
 }

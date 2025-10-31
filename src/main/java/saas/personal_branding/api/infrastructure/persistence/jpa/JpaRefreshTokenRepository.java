@@ -10,7 +10,7 @@ import java.util.Optional;
 
 public interface JpaRefreshTokenRepository extends JpaRepository<RefreshTokenEntity, Long> {
 
-    Optional<RefreshTokenEntity> findByTokenAndRevokedFalse(String token);
+    Optional<RefreshTokenEntity> findByTokenHashAndRevokedFalse(String tokenHash);
 
     @Modifying
     @Query("update RefreshTokenEntity rt set rt.revoked = true where rt.user.id = :userId and rt.revoked = false")

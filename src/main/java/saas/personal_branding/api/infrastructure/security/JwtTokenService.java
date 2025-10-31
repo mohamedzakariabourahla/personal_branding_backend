@@ -27,6 +27,12 @@ public class JwtTokenService implements TokenService {
     private final String issuer;
 
     public JwtTokenService(JwtProperties properties, Clock clock) {
+        if (properties.secret() == null || properties.secret().isBlank()) {
+            throw new IllegalStateException("security.jwt.secret must be provided");
+        }
+        if (properties.issuer() == null || properties.issuer().isBlank()) {
+            throw new IllegalStateException("security.jwt.issuer must be provided");
+        }
         this.clock = clock;
         this.secretKey = Keys.hmacShaKeyFor(properties.secret().getBytes(StandardCharsets.UTF_8));
         this.accessTokenTtl = properties.accessTokenTtl() != null ? properties.accessTokenTtl() : Duration.ofMinutes(15);

@@ -13,7 +13,7 @@ public class RefreshToken {
 
     private final Long id;
     private final Long userId;
-    private final String token;
+    private final String tokenHash;
     private final Instant expiresAt;
     private final boolean revoked;
     private final Instant createdAt;
