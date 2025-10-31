@@ -1,5 +1,6 @@
 package saas.personal_branding.api.domain.repository;
 
+import saas.personal_branding.api.domain.model.OnboardingStatus;
 import saas.personal_branding.api.domain.model.User;
 
 import java.util.List;
@@ -10,4 +11,6 @@ public interface UserRepository {
     List<User> findAll();
     Optional<User> findById(Long id);
     Optional<User> findByEmail(String email);
+    boolean existsByEmail(String email);
+    User updateOnboardingStatus(Long userId, OnboardingStatus status);
 }

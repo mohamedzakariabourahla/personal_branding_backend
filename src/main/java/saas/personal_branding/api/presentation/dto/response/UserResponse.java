@@ -1,12 +1,13 @@
 package saas.personal_branding.api.presentation.dto.response;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
+import saas.personal_branding.api.domain.model.OnboardingStatus;
 
-@AllArgsConstructor
-@Getter
-public class UserResponse {
-    private Long id;
-    private String name;
-    private String email;
+import java.util.Set;
+
+public record UserResponse(Long id,
+                           String email,
+                           boolean active,
+                           OnboardingStatus onboardingStatus,
+                           Set<String> roles,
+                           PersonResponse person) {
 }

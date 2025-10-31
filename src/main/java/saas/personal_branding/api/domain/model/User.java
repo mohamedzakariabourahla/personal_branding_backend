@@ -1,15 +1,38 @@
 package saas.personal_branding.api.domain.model;
 
-import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import lombok.Setter;
+import lombok.Singular;
 
-@AllArgsConstructor
+import java.util.Collections;
+import java.util.Set;
+
 @Getter
-@Setter
+@Builder(toBuilder = true)
+@EqualsAndHashCode
 public class User {
-    private Long id;
-    private String fullName;
-    private String email;
-    private String password;
+
+    private final Long id;
+    private final String email;
+    private final String passwordHash;
+    private final boolean active;
+
+    @Singular
+    private final Set<Role> roles;
+
+    private final OnboardingStatus onboardingStatus;
+    private final Person person;
+
+    public Set<Role> getRoles() {
+        return roles == null ? Collections.emptySet() : Collections.unmodifiableSet(roles);
+    }
+
+    public boolean hasRole(Role role) {
+        return getRoles().contains(role);
+    }
+
+    public boolean isOnboardingCompleted() {
+        return onboardingStatus != null && onboardingStatus.isCompleted();
+    }
 }
