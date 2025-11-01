@@ -11,6 +11,8 @@ import saas.personal_branding.api.domain.model.User;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -34,9 +36,23 @@ public class JwtTokenService implements TokenService {
             throw new IllegalStateException("security.jwt.issuer must be provided");
         }
         this.clock = clock;
-        this.secretKey = Keys.hmacShaKeyFor(properties.secret().getBytes(StandardCharsets.UTF_8));
+        this.secretKey = Keys.hmacShaKeyFor(resolveKeyBytes(properties.secret()));
         this.accessTokenTtl = properties.accessTokenTtl() != null ? properties.accessTokenTtl() : Duration.ofMinutes(15);
         this.issuer = properties.issuer();
+    }
+
+    private byte[] resolveKeyBytes(String secret) {
+        byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
+        if (keyBytes.length >= 32) {
+            return keyBytes;
+        }
+
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            return digest.digest(keyBytes);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("Unable to initialize JWT secret key", e);
+        }
     }
 
     @Override
