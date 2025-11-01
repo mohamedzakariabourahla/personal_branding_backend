@@ -73,14 +73,14 @@ public class UserRepositoryAdapter implements UserRepository {
     }
 
     @Override
-    public User updateOnboardingStatus(Long userId, OnboardingStatus status) {
+    public void updateOnboardingStatus(Long userId, OnboardingStatus status) {
         UserEntity entity = jpaUserRepository.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
 
         entity.setOnboardingStatus(status);
         UserEntity saved = jpaUserRepository.save(entity);
 
-        return jpaUserRepository.findDetailedById(saved.getId())
+        jpaUserRepository.findDetailedById(saved.getId())
                 .map(this::toDomain)
                 .orElseGet(() -> toDomain(saved));
     }
