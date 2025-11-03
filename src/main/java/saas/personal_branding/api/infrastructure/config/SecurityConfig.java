@@ -10,6 +10,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import io.micrometer.core.instrument.MeterRegistry;
 import saas.personal_branding.api.application.service.TokenService;
 import saas.personal_branding.api.domain.repository.UserRepository;
 import saas.personal_branding.api.infrastructure.security.JwtAuthenticationFilter;
@@ -42,7 +43,9 @@ public class SecurityConfig {
     }
 
     @Bean
-    public JwtAuthenticationFilter jwtAuthenticationFilter(TokenService tokenService, UserRepository userRepository) {
-        return new JwtAuthenticationFilter(tokenService, userRepository);
+    public JwtAuthenticationFilter jwtAuthenticationFilter(TokenService tokenService,
+                                                           UserRepository userRepository,
+                                                           MeterRegistry meterRegistry) {
+        return new JwtAuthenticationFilter(tokenService, userRepository, meterRegistry);
     }
 }

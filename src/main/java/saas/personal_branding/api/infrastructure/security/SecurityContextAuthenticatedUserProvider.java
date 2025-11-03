@@ -1,5 +1,6 @@
 package saas.personal_branding.api.infrastructure.security;
 
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -12,7 +13,7 @@ public class SecurityContextAuthenticatedUserProvider implements AuthenticatedUs
     public Long getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || authentication.getPrincipal() == null) {
-            throw new IllegalStateException("Authenticated user id is not available");
+            throw new AuthenticationCredentialsNotFoundException("Authenticated user id is not available");
         }
         Object principal = authentication.getPrincipal();
         if (principal instanceof Long principalId) {
@@ -21,6 +22,6 @@ public class SecurityContextAuthenticatedUserProvider implements AuthenticatedUs
         if (principal instanceof Number number) {
             return number.longValue();
         }
-        throw new IllegalStateException("Authenticated user id is not available");
+        throw new AuthenticationCredentialsNotFoundException("Authenticated user id is not available");
     }
 }

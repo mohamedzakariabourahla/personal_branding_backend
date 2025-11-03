@@ -4,6 +4,10 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -11,7 +15,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 import saas.personal_branding.api.application.service.TokenService;
 import saas.personal_branding.api.application.service.dto.TokenClaims;
-import saas.personal_branding.api.domain.model.Role;
 import saas.personal_branding.api.domain.model.User;
 import saas.personal_branding.api.domain.repository.UserRepository;
 
@@ -21,12 +24,18 @@ import java.util.stream.Collectors;
 
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
+    private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
+
     private final TokenService tokenService;
     private final UserRepository userRepository;
+    private final Counter invalidJwtCounter;
 
-    public JwtAuthenticationFilter(TokenService tokenService, UserRepository userRepository) {
+    public JwtAuthenticationFilter(TokenService tokenService,
+                                   UserRepository userRepository,
+                                   MeterRegistry meterRegistry) {
         this.tokenService = tokenService;
         this.userRepository = userRepository;
+        this.invalidJwtCounter = meterRegistry.counter("security.jwt.invalid");
     }
 
     @Override
@@ -47,20 +56,24 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 userRepository.findById(claims.userId())
                         .filter(User::isActive)
-                        .ifPresent(user -> authenticate(request, claims, user));
-            } catch (Exception ignored) {
-                // Token parsing or lookup failed; fall through without authentication
+                        .ifPresent(user -> authenticate(user));
+            } catch (Exception ex) {
+                invalidJwtCounter.increment();
+                log.warn("JWT validation failed: method={} path={} reason={}",
+                        request.getMethod(),
+                        request.getRequestURI(),
+                        ex.getMessage());
+                log.debug("JWT validation error details", ex);
             }
         }
 
         filterChain.doFilter(request, response);
     }
 
-    private void authenticate(HttpServletRequest request, TokenClaims claims, User user) {
-        Set<SimpleGrantedAuthority> authorities = claims.roles()
+    private void authenticate(User user) {
+        Set<SimpleGrantedAuthority> authorities = user.getRoles()
                 .stream()
-                .map(Role::name)
-                .map(SimpleGrantedAuthority::new)
+                .map(role -> new SimpleGrantedAuthority(role.name()))
                 .collect(Collectors.toUnmodifiableSet());
 
         UsernamePasswordAuthenticationToken authentication =

@@ -1,15 +1,5 @@
 package saas.personal_branding.api.infrastructure.security;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
-import org.springframework.stereotype.Component;
-import saas.personal_branding.api.application.service.TokenService;
-import saas.personal_branding.api.application.service.dto.TokenClaims;
-import saas.personal_branding.api.domain.model.Role;
-import saas.personal_branding.api.domain.model.User;
-
-import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -20,6 +10,18 @@ import java.util.Date;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import javax.crypto.SecretKey;
+
+import org.springframework.stereotype.Component;
+
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
+import saas.personal_branding.api.application.service.TokenService;
+import saas.personal_branding.api.application.service.dto.TokenClaims;
+import saas.personal_branding.api.domain.model.Role;
+import saas.personal_branding.api.domain.model.User;
+
 @Component
 public class JwtTokenService implements TokenService {
 
@@ -27,6 +29,7 @@ public class JwtTokenService implements TokenService {
     private final SecretKey secretKey;
     private final Duration accessTokenTtl;
     private final String issuer;
+    
 
     public JwtTokenService(JwtProperties properties, Clock clock) {
         if (properties.secret() == null || properties.secret().isBlank()) {
@@ -35,6 +38,7 @@ public class JwtTokenService implements TokenService {
         if (properties.issuer() == null || properties.issuer().isBlank()) {
             throw new IllegalStateException("security.jwt.issuer must be provided");
         }
+
         this.clock = clock;
         this.secretKey = Keys.hmacShaKeyFor(resolveKeyBytes(properties.secret()));
         this.accessTokenTtl = properties.accessTokenTtl() != null ? properties.accessTokenTtl() : Duration.ofMinutes(15);
