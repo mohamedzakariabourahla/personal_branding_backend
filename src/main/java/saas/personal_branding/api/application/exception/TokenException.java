@@ -13,4 +13,17 @@ public class TokenException {
             super("Refresh token has expired", "REFRESH_TOKEN_EXPIRED");
         }
     }
+
+    public static class RefreshTokenRateLimitedException extends BusinessException {
+        private final long retryAfterSeconds;
+
+        public RefreshTokenRateLimitedException(long retryAfterSeconds) {
+            super("Too many refresh attempts. Please try again later.", "REFRESH_RATE_LIMITED");
+            this.retryAfterSeconds = retryAfterSeconds;
+        }
+
+        public long getRetryAfterSeconds() {
+            return retryAfterSeconds;
+        }
+    }
 }

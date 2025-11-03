@@ -1,9 +1,12 @@
 package saas.personal_branding.api.infrastructure.config;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import saas.personal_branding.api.application.service.AuthService;
+import saas.personal_branding.api.application.service.LoginRateLimiter;
+import saas.personal_branding.api.application.service.RefreshRateLimiter;
 import saas.personal_branding.api.application.service.OnboardingService;
 import saas.personal_branding.api.application.service.ReferenceDataService;
 import saas.personal_branding.api.application.service.TokenHashService;
@@ -26,11 +29,14 @@ public class BeanConfig {
                                   TokenService tokenService,
                                   TokenHashService tokenHashService,
                                   Clock clock,
-                                  JwtProperties jwtProperties) {
+                                   JwtProperties jwtProperties,
+                                   LoginRateLimiter loginRateLimiter,
+                                   RefreshRateLimiter refreshRateLimiter,
+                                   MeterRegistry meterRegistry) {
         java.time.Duration refreshTtl = jwtProperties.refreshTokenTtl() != null
                 ? jwtProperties.refreshTokenTtl()
                 : java.time.Duration.ofDays(7);
-        return new AuthService(userRepository, refreshTokenRepository, passwordEncoder, tokenService, tokenHashService, clock, refreshTtl);
+        return new AuthService(userRepository, refreshTokenRepository, passwordEncoder, tokenService, tokenHashService, clock, refreshTtl, loginRateLimiter, refreshRateLimiter, meterRegistry);
     }
 
     @Bean

@@ -56,6 +56,25 @@ public final class UserDtoMapper {
         );
     }
 
+    public static PersonResponse emptyPersonResponse(Long userId) {
+        return new PersonResponse(
+                null,
+                userId,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                Set.of(),
+                Set.of(),
+                Set.of(),
+                Set.of(),
+                Set.of(),
+                Set.of()
+        );
+    }
+
     private static Set<ReferenceDataResponse> toReferenceResponse(Set<?> items) {
         if (items == null || items.isEmpty()) {
             return Set.of();

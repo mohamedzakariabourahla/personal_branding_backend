@@ -31,4 +31,17 @@ public class UserException {
             super("Account is inactive for user id: " + userId, "USER_INACTIVE");
         }
     }
+
+    public static class TooManyLoginAttemptsException extends BusinessException {
+        private final long retryAfterSeconds;
+
+        public TooManyLoginAttemptsException(long retryAfterSeconds) {
+            super("Too many login attempts. Please try again later.", "LOGIN_RATE_LIMITED");
+            this.retryAfterSeconds = retryAfterSeconds;
+        }
+
+        public long getRetryAfterSeconds() {
+            return retryAfterSeconds;
+        }
+    }
 }

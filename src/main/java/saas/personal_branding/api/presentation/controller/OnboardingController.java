@@ -53,10 +53,11 @@ public class OnboardingController {
     @GetMapping
     public ResponseEntity<PersonResponse> getOnboarding() {
         Long userId = authenticatedUserProvider.getCurrentUserId();
-        return onboardingService.findPersonByUserId(userId)
+        PersonResponse response = onboardingService.findPersonByUserId(userId)
                 .map(UserDtoMapper::toPersonResponse)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+                .orElse(UserDtoMapper.emptyPersonResponse(userId));
+
+        return ResponseEntity.ok(response);
     }
 
 }

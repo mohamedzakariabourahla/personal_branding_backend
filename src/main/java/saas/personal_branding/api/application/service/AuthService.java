@@ -26,6 +26,10 @@ public class AuthService {
     private final TokenHashService tokenHashService;
     private final Clock clock;
     private final Duration refreshTokenTtl;
+    private final LoginRateLimiter loginRateLimiter;
+    private final RefreshRateLimiter refreshRateLimiter;
+    private final io.micrometer.core.instrument.Counter refreshTokenRevocationCounter;
+    private final io.micrometer.core.instrument.Counter refreshTokenExpiredCounter;
 
     public AuthService(UserRepository userRepository,
                        RefreshTokenRepository refreshTokenRepository,
@@ -33,7 +37,10 @@ public class AuthService {
                        TokenService tokenService,
                        TokenHashService tokenHashService,
                        Clock clock,
-                       Duration refreshTokenTtl) {
+                       Duration refreshTokenTtl,
+                       LoginRateLimiter loginRateLimiter,
+                       RefreshRateLimiter refreshRateLimiter,
+                       io.micrometer.core.instrument.MeterRegistry meterRegistry) {
         this.userRepository = userRepository;
         this.refreshTokenRepository = refreshTokenRepository;
         this.passwordEncoder = passwordEncoder;
@@ -41,6 +48,10 @@ public class AuthService {
         this.tokenHashService = tokenHashService;
         this.clock = clock;
         this.refreshTokenTtl = refreshTokenTtl;
+        this.loginRateLimiter = loginRateLimiter;
+        this.refreshRateLimiter = refreshRateLimiter;
+        this.refreshTokenRevocationCounter = meterRegistry.counter("security.refresh.revoked");
+        this.refreshTokenExpiredCounter = meterRegistry.counter("security.refresh.expired");
     }
 
     public AuthResult register(RegisterUserCommand command) {
@@ -79,34 +90,58 @@ public class AuthService {
     }
 
     public AuthResult authenticate(LoginCommand command) {
-        User user = authenticateUser(command);
-        return issueTokensFor(user);
+        loginRateLimiter.checkAllowed(command.email());
+        try {
+            User user = authenticateUser(command);
+            AuthResult result = issueTokensFor(user);
+            loginRateLimiter.recordSuccess(command.email());
+            return result;
+        } catch (RuntimeException ex) {
+            loginRateLimiter.recordFailure(command.email());
+            throw ex;
+        }
     }
 
     public AuthResult refreshTokens(RefreshTokenCommand command) {
+        refreshRateLimiter.checkAllowed(command.refreshToken());
         String tokenHash = tokenHashService.hash(command.refreshToken());
         RefreshToken refreshToken = refreshTokenRepository.findActiveByTokenHash(tokenHash)
-                .orElseThrow(TokenException.RefreshTokenNotFoundException::new);
+                .orElseThrow(() -> {
+                    refreshRateLimiter.recordFailure(command.refreshToken());
+                    return new TokenException.RefreshTokenNotFoundException();
+                });
 
         if (refreshToken.isExpired(clock.instant())) {
             refreshTokenRepository.revokeById(refreshToken.getId());
+            refreshTokenRevocationCounter.increment();
+            refreshTokenExpiredCounter.increment();
+            refreshRateLimiter.recordFailure(command.refreshToken());
             throw new TokenException.RefreshTokenExpiredException();
         }
 
         User user = userRepository.findById(refreshToken.getUserId())
-                .orElseThrow(() -> new UserException.UserNotFoundException(refreshToken.getUserId()));
+                .orElseThrow(() -> {
+                    refreshRateLimiter.recordFailure(command.refreshToken());
+                    return new UserException.UserNotFoundException(refreshToken.getUserId());
+                });
 
         if (!user.isActive()) {
             refreshTokenRepository.revokeById(refreshToken.getId());
+            refreshTokenRevocationCounter.increment();
+            refreshRateLimiter.recordFailure(command.refreshToken());
             throw new UserException.InactiveAccountException(user.getId());
         }
 
         refreshTokenRepository.revokeById(refreshToken.getId());
-        return issueTokensFor(user);
+        refreshTokenRevocationCounter.increment();
+        AuthResult result = issueTokensFor(user);
+        refreshRateLimiter.recordSuccess(command.refreshToken());
+        return result;
     }
 
     private AuthResult issueTokensFor(User user) {
         refreshTokenRepository.revokeAllByUserId(user.getId());
+        refreshTokenRevocationCounter.increment();
         String accessToken = tokenService.generateAccessToken(user);
         String rawRefreshToken = UUID.randomUUID().toString();
         String refreshTokenHash = tokenHashService.hash(rawRefreshToken);

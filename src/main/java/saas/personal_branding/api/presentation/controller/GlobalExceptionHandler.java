@@ -1,6 +1,7 @@
 package saas.personal_branding.api.presentation.controller;
 
 import jakarta.validation.ConstraintViolationException;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -9,6 +10,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import saas.personal_branding.api.application.exception.BusinessException;
+import saas.personal_branding.api.application.exception.TokenException;
+import saas.personal_branding.api.application.exception.UserException;
 
 import java.time.Instant;
 import java.util.List;
@@ -49,12 +52,34 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ProblemDetail> handleBusinessException(BusinessException ex) {
-        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
-        problemDetail.setTitle("Business Rule Violation");
+        HttpStatus status = HttpStatus.CONFLICT;
+        HttpHeaders headers = new HttpHeaders();
+
+        if (ex instanceof UserException.InvalidCredentialsException) {
+            status = HttpStatus.UNAUTHORIZED;
+        } else if (ex instanceof UserException.InactiveAccountException) {
+            status = HttpStatus.FORBIDDEN;
+        } else if (ex instanceof UserException.TooManyLoginAttemptsException tooManyLoginAttemptsException) {
+            status = HttpStatus.TOO_MANY_REQUESTS;
+            headers.set(HttpHeaders.RETRY_AFTER, String.valueOf(tooManyLoginAttemptsException.getRetryAfterSeconds()));
+        } else if (ex instanceof TokenException.RefreshTokenRateLimitedException refreshRateLimitedException) {
+            status = HttpStatus.TOO_MANY_REQUESTS;
+            headers.set(HttpHeaders.RETRY_AFTER, String.valueOf(refreshRateLimitedException.getRetryAfterSeconds()));
+        }
+
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(status, ex.getMessage());
+        problemDetail.setTitle(status.getReasonPhrase());
         problemDetail.setProperty("timestamp", Instant.now());
         problemDetail.setProperty("code", ex.getErrorCode());
+        problemDetail.setProperty("errorCode", ex.getErrorCode());
 
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(problemDetail);
+        if (ex instanceof UserException.TooManyLoginAttemptsException tooManyLoginAttemptsException) {
+            problemDetail.setProperty("retryAfterSeconds", tooManyLoginAttemptsException.getRetryAfterSeconds());
+        } else if (ex instanceof TokenException.RefreshTokenRateLimitedException refreshRateLimitedException) {
+            problemDetail.setProperty("retryAfterSeconds", refreshRateLimitedException.getRetryAfterSeconds());
+        }
+
+        return new ResponseEntity<>(problemDetail, headers, status);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
