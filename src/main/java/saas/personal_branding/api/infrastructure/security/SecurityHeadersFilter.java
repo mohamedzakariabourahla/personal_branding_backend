@@ -1,14 +1,15 @@
 package saas.personal_branding.api.infrastructure.security;
 
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import java.io.IOException;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 @Component
 public class SecurityHeadersFilter extends OncePerRequestFilter {
@@ -17,7 +18,7 @@ public class SecurityHeadersFilter extends OncePerRequestFilter {
     private final String frameAncestors;
 
     public SecurityHeadersFilter(
-            @Value("${app.security.csp:default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self'}") String contentSecurityPolicy,
+            @Value("${app.security.csp:default-src 'self'; img-src 'self' data:; font-src 'self'; style-src 'self'; script-src 'self'; connect-src 'self'}") String contentSecurityPolicy,
             @Value("${app.security.frame-ancestors:none}") String frameAncestors) {
         this.contentSecurityPolicy = contentSecurityPolicy;
         this.frameAncestors = frameAncestors;
