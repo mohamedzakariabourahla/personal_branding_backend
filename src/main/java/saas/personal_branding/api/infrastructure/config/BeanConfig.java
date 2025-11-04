@@ -1,6 +1,7 @@
 package saas.personal_branding.api.infrastructure.config;
 
 import io.micrometer.core.instrument.MeterRegistry;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -9,11 +10,14 @@ import saas.personal_branding.api.application.service.LoginRateLimiter;
 import saas.personal_branding.api.application.service.RefreshRateLimiter;
 import saas.personal_branding.api.application.service.OnboardingService;
 import saas.personal_branding.api.application.service.ReferenceDataService;
+import saas.personal_branding.api.application.service.PasswordResetService;
+import saas.personal_branding.api.application.service.PasswordResetNotifier;
 import saas.personal_branding.api.application.service.TokenHashService;
 import saas.personal_branding.api.application.service.TokenService;
 import saas.personal_branding.api.domain.repository.PersonRepository;
 import saas.personal_branding.api.domain.repository.ReferenceDataRepository;
 import saas.personal_branding.api.domain.repository.RefreshTokenRepository;
+import saas.personal_branding.api.domain.repository.PasswordResetTokenRepository;
 import saas.personal_branding.api.domain.repository.UserRepository;
 import saas.personal_branding.api.infrastructure.security.JwtProperties;
 
@@ -49,6 +53,18 @@ public class BeanConfig {
     @Bean
     public ReferenceDataService referenceDataService(ReferenceDataRepository referenceDataRepository) {
         return new ReferenceDataService(referenceDataRepository);
+    }
+
+    @Bean
+    public PasswordResetService passwordResetService(UserRepository userRepository,
+                                                     PasswordResetTokenRepository passwordResetTokenRepository,
+                                                     PasswordEncoder passwordEncoder,
+                                                     TokenHashService tokenHashService,
+                                                     Clock clock,
+                                                     @Value("${security.password-reset.token-ttl:PT15M}") java.time.Duration tokenTtl,
+                                                     PasswordResetNotifier notifier,
+                                                     @Value("${app.mail.reset-base-url}") String resetBaseUrl) {
+        return new PasswordResetService(userRepository, passwordResetTokenRepository, passwordEncoder, tokenHashService, clock, tokenTtl, notifier, resetBaseUrl);
     }
 
     @Bean

@@ -65,6 +65,10 @@ public class GlobalExceptionHandler {
         } else if (ex instanceof TokenException.RefreshTokenRateLimitedException refreshRateLimitedException) {
             status = HttpStatus.TOO_MANY_REQUESTS;
             headers.set(HttpHeaders.RETRY_AFTER, String.valueOf(refreshRateLimitedException.getRetryAfterSeconds()));
+        } else if (ex instanceof TokenException.PasswordResetTokenNotFoundException) {
+            status = HttpStatus.BAD_REQUEST;
+        } else if (ex instanceof TokenException.PasswordResetTokenExpiredException) {
+            status = HttpStatus.BAD_REQUEST;
         }
 
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(status, ex.getMessage());

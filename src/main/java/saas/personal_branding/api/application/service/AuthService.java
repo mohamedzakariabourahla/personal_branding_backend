@@ -102,6 +102,19 @@ public class AuthService {
         }
     }
 
+    public void logout(String refreshToken) {
+        if (refreshToken == null || refreshToken.isBlank()) {
+            return;
+        }
+
+        String tokenHash = tokenHashService.hash(refreshToken);
+        refreshTokenRepository.findActiveByTokenHash(tokenHash)
+                .ifPresent(token -> {
+                    refreshTokenRepository.revokeById(token.getId());
+                    refreshTokenRevocationCounter.increment();
+                });
+    }
+
     public AuthResult refreshTokens(RefreshTokenCommand command) {
         refreshRateLimiter.checkAllowed(command.refreshToken());
         String tokenHash = tokenHashService.hash(command.refreshToken());

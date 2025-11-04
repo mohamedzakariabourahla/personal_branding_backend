@@ -26,4 +26,16 @@ public class TokenException {
             return retryAfterSeconds;
         }
     }
+
+    public static class PasswordResetTokenNotFoundException extends BusinessException {
+        public PasswordResetTokenNotFoundException() {
+            super("Password reset token is invalid or has already been used", "PASSWORD_RESET_TOKEN_NOT_FOUND");
+        }
+    }
+
+    public static class PasswordResetTokenExpiredException extends BusinessException {
+        public PasswordResetTokenExpiredException() {
+            super("Password reset token has expired", "PASSWORD_RESET_TOKEN_EXPIRED");
+        }
+    }
 }
