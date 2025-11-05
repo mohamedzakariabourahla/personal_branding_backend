@@ -1,4 +1,4 @@
-﻿package saas.personal_branding.api.infrastructure.config;
+package saas.personal_branding.api.infrastructure.config;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,6 +14,7 @@ import saas.personal_branding.api.application.service.PasswordResetService;
 import saas.personal_branding.api.application.service.PasswordResetNotifier;
 import saas.personal_branding.api.application.service.EmailVerificationService;
 import saas.personal_branding.api.application.service.EmailVerificationNotifier;
+import saas.personal_branding.api.application.service.SecurityAuditLogger;
 import saas.personal_branding.api.application.service.TokenHashService;
 import saas.personal_branding.api.application.service.TokenService;
 import saas.personal_branding.api.domain.repository.PersonRepository;
@@ -40,11 +41,12 @@ public class BeanConfig {
                                    LoginRateLimiter loginRateLimiter,
                                    RefreshRateLimiter refreshRateLimiter,
                                    EmailVerificationService emailVerificationService,
-                                   MeterRegistry meterRegistry) {
+                                   MeterRegistry meterRegistry,
+                                   SecurityAuditLogger securityAuditLogger) {
         java.time.Duration refreshTtl = jwtProperties.refreshTokenTtl() != null
                 ? jwtProperties.refreshTokenTtl()
                 : java.time.Duration.ofDays(7);
-        return new AuthService(userRepository, refreshTokenRepository, passwordEncoder, tokenService, tokenHashService, clock, refreshTtl, loginRateLimiter, refreshRateLimiter, emailVerificationService, meterRegistry);
+        return new AuthService(userRepository, refreshTokenRepository, passwordEncoder, tokenService, tokenHashService, clock, refreshTtl, loginRateLimiter, refreshRateLimiter, emailVerificationService, meterRegistry, securityAuditLogger);
     }
 
     @Bean
@@ -78,8 +80,9 @@ public class BeanConfig {
                                                              EmailVerificationNotifier notifier,
                                                              Clock clock,
                                                              @Value("${app.mail.verify-base-url}") String verifyBaseUrl,
-                                                             @Value("${security.email-verification.token-ttl:PT24H}") java.time.Duration tokenTtl) {
-        return new EmailVerificationService(userRepository, emailVerificationTokenRepository, tokenHashService, notifier, clock, verifyBaseUrl, tokenTtl);
+                                                             @Value("${security.email-verification.token-ttl:PT24H}") java.time.Duration tokenTtl,
+                                                             SecurityAuditLogger securityAuditLogger) {
+        return new EmailVerificationService(userRepository, emailVerificationTokenRepository, tokenHashService, notifier, clock, verifyBaseUrl, tokenTtl, securityAuditLogger);
     }
 
     @Bean

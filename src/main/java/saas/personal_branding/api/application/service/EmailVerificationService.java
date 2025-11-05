@@ -1,4 +1,4 @@
-﻿package saas.personal_branding.api.application.service;
+package saas.personal_branding.api.application.service;
 
 import org.springframework.transaction.annotation.Transactional;
 import saas.personal_branding.api.application.exception.TokenException;
@@ -13,6 +13,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -26,6 +27,7 @@ public class EmailVerificationService {
     private final Clock clock;
     private final Duration tokenTtl;
     private final String verificationBaseUrl;
+    private final SecurityAuditLogger auditLogger;
 
     public EmailVerificationService(UserRepository userRepository,
                                     EmailVerificationTokenRepository tokenRepository,
@@ -33,7 +35,8 @@ public class EmailVerificationService {
                                     EmailVerificationNotifier emailVerificationNotifier,
                                     Clock clock,
                                     String verificationBaseUrl,
-                                    Duration tokenTtl) {
+                                    Duration tokenTtl,
+                                    SecurityAuditLogger auditLogger) {
         this.userRepository = userRepository;
         this.tokenRepository = tokenRepository;
         this.tokenHashService = tokenHashService;
@@ -41,10 +44,17 @@ public class EmailVerificationService {
         this.clock = clock;
         this.verificationBaseUrl = verificationBaseUrl;
         this.tokenTtl = tokenTtl;
+        this.auditLogger = auditLogger;
     }
 
     public Instant sendVerificationEmail(Long userId, String email) {
-        return issueToken(userId, email);
+        Instant expiresAt = issueToken(userId, email);
+        auditLogger.log("EMAIL_VERIFICATION_SENT", Map.of(
+                "userId", String.valueOf(userId),
+                "email", email,
+                "expiresAt", expiresAt.toString()
+        ));
+        return expiresAt;
     }
 
     public Instant resendVerification(Long userId) {
@@ -55,7 +65,13 @@ public class EmailVerificationService {
             throw new UserException.EmailAlreadyVerifiedException(userId);
         }
 
-        return issueToken(user.getId(), user.getEmail());
+        Instant expiresAt = issueToken(user.getId(), user.getEmail());
+        auditLogger.log("EMAIL_VERIFICATION_RESENT", Map.of(
+                "userId", String.valueOf(user.getId()),
+                "email", user.getEmail(),
+                "expiresAt", expiresAt.toString()
+        ));
+        return expiresAt;
     }
 
     public Optional<Instant> resendVerificationForEmail(String email) {
@@ -74,12 +90,14 @@ public class EmailVerificationService {
                 .orElseThrow(TokenException.EmailVerificationTokenNotFoundException::new);
 
         if (token.isUsed()) {
+            auditLogger.log("EMAIL_VERIFICATION_REJECTED", Map.of("reason", "TOKEN_USED"));
             throw new TokenException.EmailVerificationTokenNotFoundException();
         }
 
         Instant now = clock.instant();
         if (token.isExpired(now)) {
             tokenRepository.markUsed(token.getId());
+            auditLogger.log("EMAIL_VERIFICATION_REJECTED", Map.of("reason", "TOKEN_EXPIRED"));
             throw new TokenException.EmailVerificationTokenExpiredException();
         }
 
@@ -93,6 +111,10 @@ public class EmailVerificationService {
         userRepository.save(updated);
         tokenRepository.markUsed(token.getId());
         tokenRepository.deleteByUserId(user.getId());
+        auditLogger.log("EMAIL_VERIFICATION_CONFIRMED", Map.of(
+                "userId", String.valueOf(user.getId()),
+                "email", user.getEmail()
+        ));
     }
 
     private Instant issueToken(Long userId, String email) {

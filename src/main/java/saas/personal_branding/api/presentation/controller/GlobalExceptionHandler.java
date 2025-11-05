@@ -1,4 +1,4 @@
-﻿package saas.personal_branding.api.presentation.controller;
+package saas.personal_branding.api.presentation.controller;
 
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpHeaders;

@@ -1,4 +1,4 @@
-﻿package saas.personal_branding.api.infrastructure.config;
+package saas.personal_branding.api.infrastructure.config;
 
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;

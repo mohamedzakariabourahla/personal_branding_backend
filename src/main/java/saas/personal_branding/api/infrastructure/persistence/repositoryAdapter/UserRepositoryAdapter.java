@@ -1,19 +1,20 @@
-﻿package saas.personal_branding.api.infrastructure.persistence.repositoryAdapter;
+package saas.personal_branding.api.infrastructure.persistence.repositoryAdapter;
 
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
-import saas.personal_branding.api.domain.model.*;
+import saas.personal_branding.api.domain.model.OnboardingStatus;
+import saas.personal_branding.api.domain.model.User;
 import saas.personal_branding.api.domain.repository.UserRepository;
-import saas.personal_branding.api.infrastructure.persistence.entity.*;
+import saas.personal_branding.api.infrastructure.mapping.UserEntityMapper;
+import saas.personal_branding.api.infrastructure.persistence.entity.UserEntity;
 import saas.personal_branding.api.infrastructure.persistence.jpa.JpaUserRepository;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+
+import static saas.personal_branding.api.infrastructure.mapping.UserEntityMapper.toDomain;
+import static saas.personal_branding.api.infrastructure.mapping.UserEntityMapper.updateEntity;
 
 @Repository
 @Transactional
@@ -31,13 +32,7 @@ public class UserRepositoryAdapter implements UserRepository {
                 ? jpaUserRepository.findById(user.getId()).orElse(new UserEntity())
                 : new UserEntity();
 
-        entity.setEmail(user.getEmail());
-        entity.setPasswordHash(user.getPasswordHash());
-        entity.setActive(user.isActive());
-        entity.setOnboardingStatus(user.getOnboardingStatus());
-        entity.setEmailVerified(user.isEmailVerified());
-        entity.setEmailVerifiedAt(user.getEmailVerifiedAt());
-        entity.setRoles(user.getRoles().isEmpty() ? new HashSet<>() : new HashSet<>(user.getRoles()));
+        updateEntity(user, entity);
 
         UserEntity saved = jpaUserRepository.save(entity);
         return jpaUserRepository.findDetailedById(saved.getId())
@@ -88,97 +83,6 @@ public class UserRepositoryAdapter implements UserRepository {
     }
 
     private User toDomain(UserEntity entity) {
-        if (entity == null) {
-            return null;
-        }
-
-        Person person = toDomain(entity.getPerson());
-
-        return User.builder()
-                .id(entity.getId())
-                .email(entity.getEmail())
-                .passwordHash(entity.getPasswordHash())
-                .active(Boolean.TRUE.equals(entity.getActive()))
-                .emailVerified(Boolean.TRUE.equals(entity.getEmailVerified()))
-                .emailVerifiedAt(entity.getEmailVerifiedAt())
-                .onboardingStatus(entity.getOnboardingStatus())
-                .roles(entity.getRoles() == null ? Set.of() : Set.copyOf(entity.getRoles()))
-                .person(person)
-                .build();
-    }
-
-    private Person toDomain(PersonEntity entity) {
-        if (entity == null) {
-            return null;
-        }
-
-        return Person.builder()
-                .id(entity.getId())
-                .userId(entity.getUser() != null ? entity.getUser().getId() : null)
-                .fullName(entity.getFullName())
-                .phoneNumber(entity.getPhoneNumber())
-                .companyName(entity.getCompanyName())
-                .position(entity.getPosition())
-                .brandColor(entity.getBrandColor())
-                .fontStyle(entity.getFontStyle())
-                .niches(mapNiches(entity.getNiches()))
-                .audiences(mapAudiences(entity.getAudiences()))
-                .tones(mapTones(entity.getTones()))
-                .platforms(mapPlatforms(entity.getPlatforms()))
-                .countries(mapCountries(entity.getCountries()))
-                .postingFrequencies(mapPostingFrequencies(entity.getPostingFrequencies()))
-                .build();
-    }
-
-    private Set<Niche> mapNiches(Set<NicheEntity> entities) {
-        return mapReference(entities, e -> Niche.builder()
-                .id(e.getId())
-                .name(e.getName())
-                .build());
-    }
-
-    private Set<Audience> mapAudiences(Set<AudienceEntity> entities) {
-        return mapReference(entities, e -> Audience.builder()
-                .id(e.getId())
-                .name(e.getName())
-                .build());
-    }
-
-    private Set<Tone> mapTones(Set<ToneEntity> entities) {
-        return mapReference(entities, e -> Tone.builder()
-                .id(e.getId())
-                .name(e.getName())
-                .build());
-    }
-
-    private Set<Platform> mapPlatforms(Set<PlatformEntity> entities) {
-        return mapReference(entities, e -> Platform.builder()
-                .id(e.getId())
-                .name(e.getName())
-                .build());
-    }
-
-    private Set<Country> mapCountries(Set<CountryEntity> entities) {
-        return mapReference(entities, e -> Country.builder()
-                .id(e.getId())
-                .name(e.getName())
-                .isoCode(e.getIsoCode())
-                .build());
-    }
-
-    private Set<PostingFrequency> mapPostingFrequencies(Set<PostingFrequencyEntity> entities) {
-        return mapReference(entities, e -> PostingFrequency.builder()
-                .id(e.getId())
-                .name(e.getName())
-                .build());
-    }
-
-    private <E extends ReferenceDataEntity, T> Set<T> mapReference(Set<E> entities, Function<E, T> mapper) {
-        if (entities == null || entities.isEmpty()) {
-            return Set.of();
-        }
-        return entities.stream()
-                .map(mapper)
-                .collect(Collectors.toUnmodifiableSet());
+        return UserEntityMapper.toDomain(entity);
     }
 }

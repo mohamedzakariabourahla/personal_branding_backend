@@ -1,9 +1,11 @@
-﻿package saas.personal_branding.api.presentation.controller;
+package saas.personal_branding.api.presentation.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import java.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -38,17 +40,20 @@ public class AuthController {
     private final EmailVerificationService emailVerificationService;
     private final AuthenticatedUserProvider authenticatedUserProvider;
     private final EmailVerificationRateLimiter emailVerificationRateLimiter;
+    private final long verificationResendWindowSeconds;
 
     public AuthController(AuthService authService,
                           PasswordResetService passwordResetService,
                           EmailVerificationService emailVerificationService,
                           AuthenticatedUserProvider authenticatedUserProvider,
-                          EmailVerificationRateLimiter emailVerificationRateLimiter) {
+                          EmailVerificationRateLimiter emailVerificationRateLimiter,
+                          @Value("${security.email-verification.resend-window:PT1M}") Duration verificationResendWindow) {
         this.authService = authService;
         this.passwordResetService = passwordResetService;
         this.emailVerificationService = emailVerificationService;
         this.authenticatedUserProvider = authenticatedUserProvider;
         this.emailVerificationRateLimiter = emailVerificationRateLimiter;
+        this.verificationResendWindowSeconds = Math.max(verificationResendWindow.getSeconds(), 1);
     }
 
     @PostMapping("/register")
@@ -89,7 +94,9 @@ public class AuthController {
     public ResponseEntity<Void> resendVerificationEmail() {
         Long userId = authenticatedUserProvider.getCurrentUserId();
         emailVerificationService.resendVerification(userId);
-        return ResponseEntity.accepted().build();
+        return ResponseEntity.accepted()
+                .header("Retry-After", String.valueOf(verificationResendWindowSeconds))
+                .build();
     }
 
     @PostMapping("/email/resend-guest")
@@ -103,7 +110,9 @@ public class AuthController {
         } finally {
             emailVerificationRateLimiter.recordAttempt(key);
         }
-        return ResponseEntity.accepted().build();
+        return ResponseEntity.accepted()
+                .header("Retry-After", String.valueOf(verificationResendWindowSeconds))
+                .build();
     }
 
     @PostMapping("/email/verify")

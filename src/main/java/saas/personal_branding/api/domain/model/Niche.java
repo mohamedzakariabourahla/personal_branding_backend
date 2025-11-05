@@ -1,4 +1,4 @@
-﻿package saas.personal_branding.api.domain.model;
+package saas.personal_branding.api.domain.model;
 
 import lombok.Builder;
 import lombok.EqualsAndHashCode;

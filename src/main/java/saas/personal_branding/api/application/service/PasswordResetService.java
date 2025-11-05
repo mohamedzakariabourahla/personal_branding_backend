@@ -1,4 +1,4 @@
-﻿package saas.personal_branding.api.application.service;
+package saas.personal_branding.api.application.service;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;

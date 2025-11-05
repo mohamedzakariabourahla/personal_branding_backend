@@ -1,4 +1,4 @@
-﻿package saas.personal_branding.api.infrastructure.security;
+package saas.personal_branding.api.infrastructure.security;
 
 import java.io.IOException;
 
@@ -34,9 +34,10 @@ public class SecurityHeadersFilter extends OncePerRequestFilter {
         if (!response.containsHeader("X-Frame-Options")) {
             if ("none".equalsIgnoreCase(frameAncestors)) {
                 response.setHeader("X-Frame-Options", "DENY");
-            } else {
-                response.setHeader("X-Frame-Options", "ALLOW-FROM " + frameAncestors);
+            } else if ("self".equalsIgnoreCase(frameAncestors) || "'self'".equalsIgnoreCase(frameAncestors)) {
+                response.setHeader("X-Frame-Options", "SAMEORIGIN");
             }
+            // For granular allow-lists rely on the CSP frame-ancestors directive
         }
         response.setHeader("X-Content-Type-Options", "nosniff");
         response.setHeader("Referrer-Policy", "no-referrer");

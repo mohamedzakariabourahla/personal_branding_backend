@@ -1,4 +1,4 @@
-﻿package saas.personal_branding.api.presentation.dto.request;
+package saas.personal_branding.api.presentation.dto.request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

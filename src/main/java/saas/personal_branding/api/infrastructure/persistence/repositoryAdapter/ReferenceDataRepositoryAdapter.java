@@ -1,16 +1,27 @@
-﻿package saas.personal_branding.api.infrastructure.persistence.repositoryAdapter;
+package saas.personal_branding.api.infrastructure.persistence.repositoryAdapter;
 
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
-import saas.personal_branding.api.domain.model.*;
+import saas.personal_branding.api.domain.model.Audience;
+import saas.personal_branding.api.domain.model.Country;
+import saas.personal_branding.api.domain.model.Niche;
+import saas.personal_branding.api.domain.model.Platform;
+import saas.personal_branding.api.domain.model.PostingFrequency;
+import saas.personal_branding.api.domain.model.Tone;
 import saas.personal_branding.api.domain.repository.ReferenceDataRepository;
 import saas.personal_branding.api.infrastructure.persistence.entity.*;
 import saas.personal_branding.api.infrastructure.persistence.jpa.*;
 
+import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
+
+import static saas.personal_branding.api.infrastructure.mapping.ReferenceDataSetMapper.mapAudiences;
+import static saas.personal_branding.api.infrastructure.mapping.ReferenceDataSetMapper.mapCountries;
+import static saas.personal_branding.api.infrastructure.mapping.ReferenceDataSetMapper.mapNiches;
+import static saas.personal_branding.api.infrastructure.mapping.ReferenceDataSetMapper.mapPlatforms;
+import static saas.personal_branding.api.infrastructure.mapping.ReferenceDataSetMapper.mapPostingFrequencies;
+import static saas.personal_branding.api.infrastructure.mapping.ReferenceDataSetMapper.mapTones;
 
 @Repository
 @Transactional(readOnly = true)
@@ -39,118 +50,82 @@ public class ReferenceDataRepositoryAdapter implements ReferenceDataRepository {
 
     @Override
     public Set<Niche> findNichesByIds(Set<Long> ids) {
-        return loadAndMap(ids, jpaNicheRepository::findAllById, entity -> Niche.builder()
-                .id(entity.getId())
-                .name(entity.getName())
-                .build());
+        return mapNiches(loadEntities(ids, jpaNicheRepository::findAllById));
     }
 
     @Override
     public Set<Audience> findAudiencesByIds(Set<Long> ids) {
-        return loadAndMap(ids, jpaAudienceRepository::findAllById, entity -> Audience.builder()
-                .id(entity.getId())
-                .name(entity.getName())
-                .build());
+        return mapAudiences(loadEntities(ids, jpaAudienceRepository::findAllById));
     }
 
     @Override
     public Set<Tone> findTonesByIds(Set<Long> ids) {
-        return loadAndMap(ids, jpaToneRepository::findAllById, entity -> Tone.builder()
-                .id(entity.getId())
-                .name(entity.getName())
-                .build());
+        return mapTones(loadEntities(ids, jpaToneRepository::findAllById));
     }
 
     @Override
     public Set<Platform> findPlatformsByIds(Set<Long> ids) {
-        return loadAndMap(ids, jpaPlatformRepository::findAllById, entity -> Platform.builder()
-                .id(entity.getId())
-                .name(entity.getName())
-                .build());
+        return mapPlatforms(loadEntities(ids, jpaPlatformRepository::findAllById));
     }
 
     @Override
     public Set<Country> findCountriesByIds(Set<Long> ids) {
-        return loadAndMap(ids, jpaCountryRepository::findAllById, entity -> Country.builder()
-                .id(entity.getId())
-                .name(entity.getName())
-                .isoCode(entity.getIsoCode())
-                .build());
+        return mapCountries(loadEntities(ids, jpaCountryRepository::findAllById));
     }
 
     @Override
     public Set<PostingFrequency> findPostingFrequenciesByIds(Set<Long> ids) {
-        return loadAndMap(ids, jpaPostingFrequencyRepository::findAllById, entity -> PostingFrequency.builder()
-                .id(entity.getId())
-                .name(entity.getName())
-                .build());
+        return mapPostingFrequencies(loadEntities(ids, jpaPostingFrequencyRepository::findAllById));
     }
 
     @Override
     public Set<Niche> findAllNiches() {
-        return mapAll(jpaNicheRepository.findAll(), entity -> Niche.builder()
-                .id(entity.getId())
-                .name(entity.getName())
-                .build());
+        return mapNiches(toSet(jpaNicheRepository.findAll()));
     }
 
     @Override
     public Set<Audience> findAllAudiences() {
-        return mapAll(jpaAudienceRepository.findAll(), entity -> Audience.builder()
-                .id(entity.getId())
-                .name(entity.getName())
-                .build());
+        return mapAudiences(toSet(jpaAudienceRepository.findAll()));
     }
 
     @Override
     public Set<Tone> findAllTones() {
-        return mapAll(jpaToneRepository.findAll(), entity -> Tone.builder()
-                .id(entity.getId())
-                .name(entity.getName())
-                .build());
+        return mapTones(toSet(jpaToneRepository.findAll()));
     }
 
     @Override
     public Set<Platform> findAllPlatforms() {
-        return mapAll(jpaPlatformRepository.findAll(), entity -> Platform.builder()
-                .id(entity.getId())
-                .name(entity.getName())
-                .build());
+        return mapPlatforms(toSet(jpaPlatformRepository.findAll()));
     }
 
     @Override
     public Set<Country> findAllCountries() {
-        return mapAll(jpaCountryRepository.findAll(), entity -> Country.builder()
-                .id(entity.getId())
-                .name(entity.getName())
-                .isoCode(entity.getIsoCode())
-                .build());
+        return mapCountries(toSet(jpaCountryRepository.findAll()));
     }
 
     @Override
     public Set<PostingFrequency> findAllPostingFrequencies() {
-        return mapAll(jpaPostingFrequencyRepository.findAll(), entity -> PostingFrequency.builder()
-                .id(entity.getId())
-                .name(entity.getName())
-                .build());
+        return mapPostingFrequencies(toSet(jpaPostingFrequencyRepository.findAll()));
     }
 
-    private <E extends ReferenceDataEntity, D> Set<D> loadAndMap(Set<Long> ids,
-                                                                 Function<Iterable<Long>, Iterable<E>> loader,
-                                                                 Function<E, D> mapper) {
+    private <E extends ReferenceDataEntity> Set<E> loadEntities(Set<Long> ids,
+                                                                 Function<Iterable<Long>, Iterable<E>> loader) {
         if (ids == null || ids.isEmpty()) {
             return Set.of();
         }
 
-        Iterable<E> entities = loader.apply(ids);
-        return StreamSupport.stream(entities.spliterator(), false)
-                .map(mapper)
-                .collect(Collectors.toUnmodifiableSet());
+        return toSet(loader.apply(ids));
     }
 
-    private <E extends ReferenceDataEntity, D> Set<D> mapAll(Iterable<E> entities, Function<E, D> mapper) {
-        return StreamSupport.stream(entities.spliterator(), false)
-                .map(mapper)
-                .collect(Collectors.toUnmodifiableSet());
+    private <E extends ReferenceDataEntity> Set<E> toSet(Iterable<E> iterable) {
+        if (iterable instanceof Set<E> asSet) {
+            return Set.copyOf(asSet);
+        }
+        if (iterable instanceof java.util.Collection<E> collection) {
+            return Set.copyOf(collection);
+        }
+        Set<E> result = new HashSet<>();
+        iterable.forEach(result::add);
+        return Set.copyOf(result);
     }
 }

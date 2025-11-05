@@ -1,4 +1,4 @@
-﻿package saas.personal_branding.api.application.exception;
+package saas.personal_branding.api.application.exception;
 
 public abstract class BusinessException extends RuntimeException {
     private final String errorCode;

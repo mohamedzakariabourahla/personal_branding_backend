@@ -1,4 +1,4 @@
-﻿package saas.personal_branding.api.infrastructure.security;
+package saas.personal_branding.api.infrastructure.security;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

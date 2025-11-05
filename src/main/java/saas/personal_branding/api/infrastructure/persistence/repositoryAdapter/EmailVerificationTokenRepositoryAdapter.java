@@ -1,9 +1,10 @@
-﻿package saas.personal_branding.api.infrastructure.persistence.repositoryAdapter;
+package saas.personal_branding.api.infrastructure.persistence.repositoryAdapter;
 
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import saas.personal_branding.api.domain.model.EmailVerificationToken;
 import saas.personal_branding.api.domain.repository.EmailVerificationTokenRepository;
+import saas.personal_branding.api.infrastructure.mapping.EmailVerificationTokenEntityMapper;
 import saas.personal_branding.api.infrastructure.persistence.entity.EmailVerificationTokenEntity;
 import saas.personal_branding.api.infrastructure.persistence.entity.UserEntity;
 import saas.personal_branding.api.infrastructure.persistence.jpa.JpaEmailVerificationTokenRepository;
@@ -41,14 +42,14 @@ public class EmailVerificationTokenRepositoryAdapter implements EmailVerificatio
         entity.setUsedAt(token.getUsedAt());
 
         EmailVerificationTokenEntity saved = jpaRepository.save(entity);
-        return toDomain(saved);
+        return EmailVerificationTokenEntityMapper.toDomain(saved);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<EmailVerificationToken> findByTokenHash(String tokenHash) {
         return jpaRepository.findByTokenHash(tokenHash)
-                .map(this::toDomain);
+                .map(EmailVerificationTokenEntityMapper::toDomain);
     }
 
     @Override
@@ -59,20 +60,5 @@ public class EmailVerificationTokenRepositoryAdapter implements EmailVerificatio
     @Override
     public void markUsed(Long tokenId) {
         jpaRepository.markUsed(tokenId, Instant.now());
-    }
-
-    private EmailVerificationToken toDomain(EmailVerificationTokenEntity entity) {
-        if (entity == null) {
-            return null;
-        }
-
-        return EmailVerificationToken.builder()
-                .id(entity.getId())
-                .userId(entity.getUser() != null ? entity.getUser().getId() : null)
-                .tokenHash(entity.getTokenHash())
-                .expiresAt(entity.getExpiresAt())
-                .createdAt(entity.getCreatedAt())
-                .usedAt(entity.getUsedAt())
-                .build();
     }
 }

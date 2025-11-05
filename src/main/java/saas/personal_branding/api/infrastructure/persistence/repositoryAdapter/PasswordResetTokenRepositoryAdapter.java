@@ -1,9 +1,10 @@
-﻿package saas.personal_branding.api.infrastructure.persistence.repositoryAdapter;
+package saas.personal_branding.api.infrastructure.persistence.repositoryAdapter;
 
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import saas.personal_branding.api.domain.model.PasswordResetToken;
 import saas.personal_branding.api.domain.repository.PasswordResetTokenRepository;
+import saas.personal_branding.api.infrastructure.mapping.PasswordResetTokenEntityMapper;
 import saas.personal_branding.api.infrastructure.persistence.entity.PasswordResetTokenEntity;
 import saas.personal_branding.api.infrastructure.persistence.entity.UserEntity;
 import saas.personal_branding.api.infrastructure.persistence.jpa.JpaPasswordResetTokenRepository;
@@ -41,14 +42,14 @@ public class PasswordResetTokenRepositoryAdapter implements PasswordResetTokenRe
         entity.setUsedAt(token.getUsedAt());
 
         PasswordResetTokenEntity saved = jpaPasswordResetTokenRepository.save(entity);
-        return toDomain(saved);
+        return PasswordResetTokenEntityMapper.toDomain(saved);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<PasswordResetToken> findByTokenHash(String tokenHash) {
         return jpaPasswordResetTokenRepository.findByTokenHash(tokenHash)
-                .map(this::toDomain);
+                .map(PasswordResetTokenEntityMapper::toDomain);
     }
 
     @Override
@@ -59,19 +60,5 @@ public class PasswordResetTokenRepositoryAdapter implements PasswordResetTokenRe
     @Override
     public void deleteByUserId(Long userId) {
         jpaPasswordResetTokenRepository.deleteAllByUserId(userId);
-    }
-
-    private PasswordResetToken toDomain(PasswordResetTokenEntity entity) {
-        if (entity == null) {
-            return null;
-        }
-        return PasswordResetToken.builder()
-                .id(entity.getId())
-                .userId(entity.getUser() != null ? entity.getUser().getId() : null)
-                .tokenHash(entity.getTokenHash())
-                .expiresAt(entity.getExpiresAt())
-                .createdAt(entity.getCreatedAt())
-                .usedAt(entity.getUsedAt())
-                .build();
     }
 }

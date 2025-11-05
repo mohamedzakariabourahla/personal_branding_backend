@@ -1,4 +1,4 @@
-﻿package saas.personal_branding.api.infrastructure.config;
+package saas.personal_branding.api.infrastructure.config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;

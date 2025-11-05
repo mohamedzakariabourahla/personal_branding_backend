@@ -1,9 +1,15 @@
-﻿package saas.personal_branding.api.infrastructure.persistence.repositoryAdapter;
+package saas.personal_branding.api.infrastructure.persistence.repositoryAdapter;
 
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
-import saas.personal_branding.api.domain.model.*;
+import saas.personal_branding.api.domain.model.Audience;
+import saas.personal_branding.api.domain.model.Country;
+import saas.personal_branding.api.domain.model.Niche;
+import saas.personal_branding.api.domain.model.Person;
+import saas.personal_branding.api.domain.model.Platform;
+import saas.personal_branding.api.domain.model.PostingFrequency;
+import saas.personal_branding.api.domain.model.Tone;
 import saas.personal_branding.api.domain.repository.PersonRepository;
 import saas.personal_branding.api.infrastructure.persistence.entity.*;
 import saas.personal_branding.api.infrastructure.persistence.jpa.*;
@@ -13,6 +19,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import saas.personal_branding.api.infrastructure.mapping.PersonEntityMapper;
 
 @Repository
 @Transactional
@@ -72,56 +80,14 @@ public class PersonRepositoryAdapter implements PersonRepository {
         PersonEntity saved = jpaPersonRepository.save(entity);
         userEntity.setPerson(saved);
 
-        return toDomain(saved);
+        return PersonEntityMapper.toDomain(saved);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<Person> findByUserId(Long userId) {
         return jpaPersonRepository.findByUserId(userId)
-                .map(this::toDomain);
-    }
-
-    private Person toDomain(PersonEntity entity) {
-        if (entity == null) {
-            return null;
-        }
-
-        return Person.builder()
-                .id(entity.getId())
-                .userId(entity.getUser() != null ? entity.getUser().getId() : null)
-                .fullName(entity.getFullName())
-                .phoneNumber(entity.getPhoneNumber())
-                .companyName(entity.getCompanyName())
-                .position(entity.getPosition())
-                .brandColor(entity.getBrandColor())
-                .fontStyle(entity.getFontStyle())
-                .niches(mapReference(entity.getNiches(), niche -> Niche.builder()
-                        .id(niche.getId())
-                        .name(niche.getName())
-                        .build()))
-                .audiences(mapReference(entity.getAudiences(), audience -> Audience.builder()
-                        .id(audience.getId())
-                        .name(audience.getName())
-                        .build()))
-                .tones(mapReference(entity.getTones(), tone -> Tone.builder()
-                        .id(tone.getId())
-                        .name(tone.getName())
-                        .build()))
-                .platforms(mapReference(entity.getPlatforms(), platform -> Platform.builder()
-                        .id(platform.getId())
-                        .name(platform.getName())
-                        .build()))
-                .countries(mapReference(entity.getCountries(), country -> Country.builder()
-                        .id(country.getId())
-                        .name(country.getName())
-                        .isoCode(country.getIsoCode())
-                        .build()))
-                .postingFrequencies(mapReference(entity.getPostingFrequencies(), frequency -> PostingFrequency.builder()
-                        .id(frequency.getId())
-                        .name(frequency.getName())
-                        .build()))
-                .build();
+                .map(PersonEntityMapper::toDomain);
     }
 
     private Set<NicheEntity> loadNiches(Set<Niche> niches) {
@@ -164,14 +130,5 @@ public class PersonRepositoryAdapter implements PersonRepository {
         Set<E> result = new HashSet<>();
         found.forEach(result::add);
         return result;
-    }
-
-    private <E extends ReferenceDataEntity, D> Set<D> mapReference(Set<E> entities, Function<E, D> mapper) {
-        if (entities == null || entities.isEmpty()) {
-            return Set.of();
-        }
-        return entities.stream()
-                .map(mapper)
-                .collect(Collectors.toUnmodifiableSet());
     }
 }

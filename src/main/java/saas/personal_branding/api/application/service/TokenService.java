@@ -1,4 +1,4 @@
-﻿package saas.personal_branding.api.application.service;
+package saas.personal_branding.api.application.service;
 
 import saas.personal_branding.api.application.service.dto.TokenClaims;
 import saas.personal_branding.api.domain.model.User;

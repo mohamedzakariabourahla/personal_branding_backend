@@ -1,4 +1,4 @@
-﻿package saas.personal_branding.api.infrastructure.mail;
+package saas.personal_branding.api.infrastructure.mail;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
@@ -9,16 +9,13 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StreamUtils;
-import saas.personal_branding.api.application.service.EmailVerificationNotifier;
-import saas.personal_branding.api.application.service.PasswordResetNotifier;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 @Component
-public class MailService implements PasswordResetNotifier, EmailVerificationNotifier {
+public class MailService {
 
     private final JavaMailSender mailSender;
     private final ResourceLoader resourceLoader;
@@ -35,7 +32,6 @@ public class MailService implements PasswordResetNotifier, EmailVerificationNoti
         this.fromAddress = fromAddress;
     }
 
-    @Override
     public void sendPasswordResetEmail(String to, String resetLink) {
         sendTemplatedEmail(
                 to,
@@ -45,7 +41,6 @@ public class MailService implements PasswordResetNotifier, EmailVerificationNoti
         );
     }
 
-    @Override
     public void sendEmailVerificationEmail(String email, String verificationLink, String token) {
         sendTemplatedEmail(
                 email,
