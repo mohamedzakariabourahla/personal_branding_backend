@@ -1,6 +1,5 @@
-package saas.personal_branding.api.application.service;
+﻿package saas.personal_branding.api.application.service;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 import saas.personal_branding.api.application.exception.TokenException;
@@ -36,7 +35,7 @@ public class PasswordResetService {
                                 Clock clock,
                                 Duration tokenTtl,
                                 PasswordResetNotifier notifier,
-                                @Value("${app.mail.reset-base-url}") String resetBaseUrl) {
+                                String resetBaseUrl) {
         this.userRepository = userRepository;
         this.passwordResetTokenRepository = passwordResetTokenRepository;
         this.passwordEncoder = passwordEncoder;

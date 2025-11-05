@@ -1,4 +1,4 @@
-package saas.personal_branding.api.infrastructure.persistence.entity;
+﻿package saas.personal_branding.api.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
 import lombok.*;

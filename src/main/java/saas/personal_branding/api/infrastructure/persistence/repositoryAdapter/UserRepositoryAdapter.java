@@ -1,4 +1,4 @@
-package saas.personal_branding.api.infrastructure.persistence.repositoryAdapter;
+﻿package saas.personal_branding.api.infrastructure.persistence.repositoryAdapter;
 
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Repository;
@@ -35,6 +35,8 @@ public class UserRepositoryAdapter implements UserRepository {
         entity.setPasswordHash(user.getPasswordHash());
         entity.setActive(user.isActive());
         entity.setOnboardingStatus(user.getOnboardingStatus());
+        entity.setEmailVerified(user.isEmailVerified());
+        entity.setEmailVerifiedAt(user.getEmailVerifiedAt());
         entity.setRoles(user.getRoles().isEmpty() ? new HashSet<>() : new HashSet<>(user.getRoles()));
 
         UserEntity saved = jpaUserRepository.save(entity);
@@ -97,6 +99,8 @@ public class UserRepositoryAdapter implements UserRepository {
                 .email(entity.getEmail())
                 .passwordHash(entity.getPasswordHash())
                 .active(Boolean.TRUE.equals(entity.getActive()))
+                .emailVerified(Boolean.TRUE.equals(entity.getEmailVerified()))
+                .emailVerifiedAt(entity.getEmailVerifiedAt())
                 .onboardingStatus(entity.getOnboardingStatus())
                 .roles(entity.getRoles() == null ? Set.of() : Set.copyOf(entity.getRoles()))
                 .person(person)

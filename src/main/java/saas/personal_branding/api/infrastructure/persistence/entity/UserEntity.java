@@ -1,10 +1,11 @@
-package saas.personal_branding.api.infrastructure.persistence.entity;
+﻿package saas.personal_branding.api.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
 import saas.personal_branding.api.domain.model.OnboardingStatus;
 import saas.personal_branding.api.domain.model.Role;
 
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -30,6 +31,13 @@ public class UserEntity {
     @Column(nullable = false)
     @Builder.Default
     private Boolean active = Boolean.TRUE;
+
+    @Column(name = "email_verified", nullable = false)
+    @Builder.Default
+    private Boolean emailVerified = Boolean.FALSE;
+
+    @Column(name = "email_verified_at")
+    private Instant emailVerifiedAt;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "onboarding_status", nullable = false)

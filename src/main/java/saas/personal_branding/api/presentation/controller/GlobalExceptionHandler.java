@@ -1,4 +1,4 @@
-package saas.personal_branding.api.presentation.controller;
+﻿package saas.personal_branding.api.presentation.controller;
 
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpHeaders;
@@ -59,15 +59,26 @@ public class GlobalExceptionHandler {
             status = HttpStatus.UNAUTHORIZED;
         } else if (ex instanceof UserException.InactiveAccountException) {
             status = HttpStatus.FORBIDDEN;
+        } else if (ex instanceof UserException.EmailNotVerifiedException) {
+            status = HttpStatus.FORBIDDEN;
+        } else if (ex instanceof UserException.EmailAlreadyVerifiedException) {
+            status = HttpStatus.CONFLICT;
         } else if (ex instanceof UserException.TooManyLoginAttemptsException tooManyLoginAttemptsException) {
             status = HttpStatus.TOO_MANY_REQUESTS;
             headers.set(HttpHeaders.RETRY_AFTER, String.valueOf(tooManyLoginAttemptsException.getRetryAfterSeconds()));
         } else if (ex instanceof TokenException.RefreshTokenRateLimitedException refreshRateLimitedException) {
             status = HttpStatus.TOO_MANY_REQUESTS;
             headers.set(HttpHeaders.RETRY_AFTER, String.valueOf(refreshRateLimitedException.getRetryAfterSeconds()));
+        } else if (ex instanceof UserException.EmailVerificationResendRateLimitedException resendRateLimitedException) {
+            status = HttpStatus.TOO_MANY_REQUESTS;
+            headers.set(HttpHeaders.RETRY_AFTER, String.valueOf(resendRateLimitedException.getRetryAfterSeconds()));
         } else if (ex instanceof TokenException.PasswordResetTokenNotFoundException) {
             status = HttpStatus.BAD_REQUEST;
         } else if (ex instanceof TokenException.PasswordResetTokenExpiredException) {
+            status = HttpStatus.BAD_REQUEST;
+        } else if (ex instanceof TokenException.EmailVerificationTokenNotFoundException) {
+            status = HttpStatus.BAD_REQUEST;
+        } else if (ex instanceof TokenException.EmailVerificationTokenExpiredException) {
             status = HttpStatus.BAD_REQUEST;
         }
 
@@ -81,6 +92,8 @@ public class GlobalExceptionHandler {
             problemDetail.setProperty("retryAfterSeconds", tooManyLoginAttemptsException.getRetryAfterSeconds());
         } else if (ex instanceof TokenException.RefreshTokenRateLimitedException refreshRateLimitedException) {
             problemDetail.setProperty("retryAfterSeconds", refreshRateLimitedException.getRetryAfterSeconds());
+        } else if (ex instanceof UserException.EmailVerificationResendRateLimitedException resendRateLimitedException) {
+            problemDetail.setProperty("retryAfterSeconds", resendRateLimitedException.getRetryAfterSeconds());
         }
 
         return new ResponseEntity<>(problemDetail, headers, status);

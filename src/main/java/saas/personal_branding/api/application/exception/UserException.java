@@ -1,10 +1,10 @@
-package saas.personal_branding.api.application.exception;
+﻿package saas.personal_branding.api.application.exception;
 
 public class UserException {
 
     public static class EmailAlreadyExistsException extends BusinessException {
         public EmailAlreadyExistsException(String email) {
-            super("Email is already registered: " + email, "USER_EMAIL_EXISTS");
+            super("An account already exists with this email address. Try signing in or resetting your password.", "USER_EMAIL_EXISTS");
         }
     }
 
@@ -32,11 +32,36 @@ public class UserException {
         }
     }
 
+    public static class EmailNotVerifiedException extends BusinessException {
+        public EmailNotVerifiedException(Long userId) {
+            super("Email address is not verified for user id: " + userId, "USER_EMAIL_NOT_VERIFIED");
+        }
+    }
+
+    public static class EmailAlreadyVerifiedException extends BusinessException {
+        public EmailAlreadyVerifiedException(Long userId) {
+            super("Email address is already verified for user id: " + userId, "USER_EMAIL_ALREADY_VERIFIED");
+        }
+    }
+
     public static class TooManyLoginAttemptsException extends BusinessException {
         private final long retryAfterSeconds;
 
         public TooManyLoginAttemptsException(long retryAfterSeconds) {
             super("Too many login attempts. Please try again later.", "LOGIN_RATE_LIMITED");
+            this.retryAfterSeconds = retryAfterSeconds;
+        }
+
+        public long getRetryAfterSeconds() {
+            return retryAfterSeconds;
+        }
+    }
+
+    public static class EmailVerificationResendRateLimitedException extends BusinessException {
+        private final long retryAfterSeconds;
+
+        public EmailVerificationResendRateLimitedException(long retryAfterSeconds) {
+            super("You requested a verification email too recently. Please wait before trying again.", "EMAIL_VERIFICATION_RATE_LIMITED");
             this.retryAfterSeconds = retryAfterSeconds;
         }
 

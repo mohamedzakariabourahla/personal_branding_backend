@@ -1,5 +1,6 @@
-package saas.personal_branding.api.presentation.controller;
+﻿package saas.personal_branding.api.presentation.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,13 +12,19 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import saas.personal_branding.api.application.service.AuthService;
 import saas.personal_branding.api.application.service.PasswordResetService;
+import saas.personal_branding.api.application.service.EmailVerificationService;
+import saas.personal_branding.api.application.service.AuthenticatedUserProvider;
+import saas.personal_branding.api.application.service.EmailVerificationRateLimiter;
 import saas.personal_branding.api.presentation.dto.request.LoginRequest;
 import saas.personal_branding.api.presentation.dto.request.LogoutRequest;
 import saas.personal_branding.api.presentation.dto.request.PasswordResetConfirmRequest;
 import saas.personal_branding.api.presentation.dto.request.PasswordResetInitiateRequest;
+import saas.personal_branding.api.presentation.dto.request.EmailVerificationConfirmRequest;
+import saas.personal_branding.api.presentation.dto.request.EmailVerificationResendRequest;
 import saas.personal_branding.api.presentation.dto.request.RefreshTokenRequest;
 import saas.personal_branding.api.presentation.dto.request.RegisterRequest;
 import saas.personal_branding.api.presentation.dto.response.AuthResponse;
+import saas.personal_branding.api.presentation.dto.response.RegistrationPendingResponse;
 import saas.personal_branding.api.presentation.mapper.UserDtoMapper;
 
 @RestController
@@ -28,17 +35,32 @@ public class AuthController {
 
     private final AuthService authService;
     private final PasswordResetService passwordResetService;
+    private final EmailVerificationService emailVerificationService;
+    private final AuthenticatedUserProvider authenticatedUserProvider;
+    private final EmailVerificationRateLimiter emailVerificationRateLimiter;
 
     public AuthController(AuthService authService,
-                          PasswordResetService passwordResetService) {
+                          PasswordResetService passwordResetService,
+                          EmailVerificationService emailVerificationService,
+                          AuthenticatedUserProvider authenticatedUserProvider,
+                          EmailVerificationRateLimiter emailVerificationRateLimiter) {
         this.authService = authService;
         this.passwordResetService = passwordResetService;
+        this.emailVerificationService = emailVerificationService;
+        this.authenticatedUserProvider = authenticatedUserProvider;
+        this.emailVerificationRateLimiter = emailVerificationRateLimiter;
     }
 
     @PostMapping("/register")
-    public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
-        AuthService.AuthResult result = authService.register(new AuthService.RegisterUserCommand(request.getEmail(), request.getPassword()));
-        return ResponseEntity.status(HttpStatus.CREATED).body(UserDtoMapper.toAuthResponse(result));
+    public ResponseEntity<RegistrationPendingResponse> register(@Valid @RequestBody RegisterRequest request) {
+        AuthService.RegistrationResult result = authService.register(new AuthService.RegisterUserCommand(request.getEmail(), request.getPassword()));
+        RegistrationPendingResponse response = new RegistrationPendingResponse(
+                result.email(),
+                result.verificationExpiresAt(),
+                true,
+                "We've sent a verification link to your email. Please confirm your address before signing in."
+        );
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PostMapping("/login")
@@ -63,6 +85,33 @@ public class AuthController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/email/resend")
+    public ResponseEntity<Void> resendVerificationEmail() {
+        Long userId = authenticatedUserProvider.getCurrentUserId();
+        emailVerificationService.resendVerification(userId);
+        return ResponseEntity.accepted().build();
+    }
+
+    @PostMapping("/email/resend-guest")
+    public ResponseEntity<Void> resendVerificationEmailGuest(@Valid @RequestBody EmailVerificationResendRequest request,
+                                                             HttpServletRequest httpRequest) {
+        String key = buildRateLimitKey(request.getEmail(), httpRequest);
+        emailVerificationRateLimiter.checkAllowed(key);
+        try {
+            String email = request.getEmail() != null ? request.getEmail().trim() : null;
+            emailVerificationService.resendVerificationForEmail(email);
+        } finally {
+            emailVerificationRateLimiter.recordAttempt(key);
+        }
+        return ResponseEntity.accepted().build();
+    }
+
+    @PostMapping("/email/verify")
+    public ResponseEntity<Void> verifyEmail(@Valid @RequestBody EmailVerificationConfirmRequest request) {
+        emailVerificationService.verifyToken(request.getToken());
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/password/reset-request")
     public ResponseEntity<Void> requestPasswordReset(@Valid @RequestBody PasswordResetInitiateRequest request) {
         try {
@@ -80,5 +129,19 @@ public class AuthController {
     public ResponseEntity<Void> resetPassword(@Valid @RequestBody PasswordResetConfirmRequest request) {
         passwordResetService.resetPassword(request.getToken(), request.getNewPassword());
         return ResponseEntity.noContent().build();
+    }
+
+    private String buildRateLimitKey(String email, HttpServletRequest request) {
+        String normalizedEmail = email == null ? "" : email.trim().toLowerCase();
+        String clientIp = resolveClientIp(request);
+        return normalizedEmail + "|" + clientIp;
+    }
+
+    private String resolveClientIp(HttpServletRequest request) {
+        String forwarded = request.getHeader("X-Forwarded-For");
+        if (forwarded != null && !forwarded.isBlank()) {
+            return forwarded.split(",")[0].trim();
+        }
+        return request.getRemoteAddr();
     }
 }

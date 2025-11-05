@@ -1,4 +1,4 @@
-package saas.personal_branding.api.application.service;
+﻿package saas.personal_branding.api.application.service;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +28,7 @@ public class AuthService {
     private final Duration refreshTokenTtl;
     private final LoginRateLimiter loginRateLimiter;
     private final RefreshRateLimiter refreshRateLimiter;
+    private final EmailVerificationService emailVerificationService;
     private final io.micrometer.core.instrument.Counter refreshTokenRevocationCounter;
     private final io.micrometer.core.instrument.Counter refreshTokenExpiredCounter;
 
@@ -40,6 +41,7 @@ public class AuthService {
                        Duration refreshTokenTtl,
                        LoginRateLimiter loginRateLimiter,
                        RefreshRateLimiter refreshRateLimiter,
+                       EmailVerificationService emailVerificationService,
                        io.micrometer.core.instrument.MeterRegistry meterRegistry) {
         this.userRepository = userRepository;
         this.refreshTokenRepository = refreshTokenRepository;
@@ -50,11 +52,12 @@ public class AuthService {
         this.refreshTokenTtl = refreshTokenTtl;
         this.loginRateLimiter = loginRateLimiter;
         this.refreshRateLimiter = refreshRateLimiter;
+        this.emailVerificationService = emailVerificationService;
         this.refreshTokenRevocationCounter = meterRegistry.counter("security.refresh.revoked");
         this.refreshTokenExpiredCounter = meterRegistry.counter("security.refresh.expired");
     }
 
-    public AuthResult register(RegisterUserCommand command) {
+    public RegistrationResult register(RegisterUserCommand command) {
         if (userRepository.existsByEmail(command.email())) {
             throw new UserException.EmailAlreadyExistsException(command.email());
         }
@@ -65,12 +68,14 @@ public class AuthService {
                 .email(command.email())
                 .passwordHash(passwordHash)
                 .active(true)
+                .emailVerified(false)
                 .onboardingStatus(OnboardingStatus.NOT_STARTED)
                 .role(Role.CLIENT)
                 .build();
 
         User saved = userRepository.save(user);
-        return issueTokensFor(saved);
+        Instant expiresAt = emailVerificationService.sendVerificationEmail(saved.getId(), saved.getEmail());
+        return new RegistrationResult(saved.getId(), saved.getEmail(), expiresAt);
     }
 
     @Transactional(readOnly = true)
@@ -84,6 +89,10 @@ public class AuthService {
 
         if (!passwordEncoder.matches(command.password(), user.getPasswordHash())) {
             throw new UserException.InvalidCredentialsException();
+        }
+
+        if (!user.isEmailVerified()) {
+            throw new UserException.EmailNotVerifiedException(user.getId());
         }
 
         return user;
@@ -185,5 +194,8 @@ public class AuthService {
     }
 
     public record AuthResult(User user, String accessToken, String refreshToken, Instant refreshTokenExpiresAt) {
+    }
+
+    public record RegistrationResult(Long userId, String email, Instant verificationExpiresAt) {
     }
 }

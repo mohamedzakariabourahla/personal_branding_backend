@@ -1,10 +1,11 @@
-package saas.personal_branding.api.domain.model;
+﻿package saas.personal_branding.api.domain.model;
 
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Singular;
 
+import java.time.Instant;
 import java.util.Collections;
 import java.util.Set;
 
@@ -17,6 +18,8 @@ public class User {
     private final String email;
     private final String passwordHash;
     private final boolean active;
+    private final boolean emailVerified;
+    private final Instant emailVerifiedAt;
 
     @Singular
     private final Set<Role> roles;
@@ -34,5 +37,9 @@ public class User {
 
     public boolean isOnboardingCompleted() {
         return onboardingStatus != null && onboardingStatus.isCompleted();
+    }
+
+    public boolean isEmailVerified() {
+        return emailVerified;
     }
 }

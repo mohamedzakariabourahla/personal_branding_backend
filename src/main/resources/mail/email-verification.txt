@@ -1,0 +1,11 @@
+Welcome!
+
+Thanks for signing up. Copy the link below into your browser to verify your email address:
+
+{{verificationLink}}
+
+If the link does not work, paste this verification token when prompted:
+
+{{verificationToken}}
+
+If you didn't create an account, you can ignore this email.

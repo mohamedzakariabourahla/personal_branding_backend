@@ -1,4 +1,4 @@
-package saas.personal_branding.api.application.exception;
+﻿package saas.personal_branding.api.application.exception;
 
 public class TokenException {
 
@@ -36,6 +36,18 @@ public class TokenException {
     public static class PasswordResetTokenExpiredException extends BusinessException {
         public PasswordResetTokenExpiredException() {
             super("Password reset token has expired", "PASSWORD_RESET_TOKEN_EXPIRED");
+        }
+    }
+
+    public static class EmailVerificationTokenNotFoundException extends BusinessException {
+        public EmailVerificationTokenNotFoundException() {
+            super("Email verification token is invalid or has already been used", "EMAIL_VERIFICATION_TOKEN_NOT_FOUND");
+        }
+    }
+
+    public static class EmailVerificationTokenExpiredException extends BusinessException {
+        public EmailVerificationTokenExpiredException() {
+            super("Email verification token has expired", "EMAIL_VERIFICATION_TOKEN_EXPIRED");
         }
     }
 }

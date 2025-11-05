@@ -1,4 +1,4 @@
-package saas.personal_branding.api.presentation.mapper;
+﻿package saas.personal_branding.api.presentation.mapper;
 
 import saas.personal_branding.api.application.service.AuthService;
 import saas.personal_branding.api.domain.model.*;
@@ -27,6 +27,7 @@ public final class UserDtoMapper {
                 user.getId(),
                 user.getEmail(),
                 user.isActive(),
+                user.isEmailVerified(),
                 user.getOnboardingStatus(),
                 roles,
                 personResponse

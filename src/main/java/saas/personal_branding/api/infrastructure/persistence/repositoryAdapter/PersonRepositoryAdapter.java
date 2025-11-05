@@ -1,4 +1,4 @@
-package saas.personal_branding.api.infrastructure.persistence.repositoryAdapter;
+﻿package saas.personal_branding.api.infrastructure.persistence.repositoryAdapter;
 
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Repository;

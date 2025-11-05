@@ -1,4 +1,4 @@
-package saas.personal_branding.api.domain.model;
+﻿package saas.personal_branding.api.domain.model;
 
 public enum OnboardingStatus {
     NOT_STARTED,

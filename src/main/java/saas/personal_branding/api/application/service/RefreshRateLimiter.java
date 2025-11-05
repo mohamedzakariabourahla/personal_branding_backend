@@ -1,4 +1,4 @@
-package saas.personal_branding.api.application.service;
+﻿package saas.personal_branding.api.application.service;
 
 public interface RefreshRateLimiter {
     void checkAllowed(String key);
