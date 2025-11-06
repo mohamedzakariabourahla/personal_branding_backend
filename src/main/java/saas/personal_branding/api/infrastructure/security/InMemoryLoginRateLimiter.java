@@ -13,7 +13,10 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+
 @Component
+@ConditionalOnProperty(value = "security.login.rate-limiter", havingValue = "memory", matchIfMissing = true)
 public class InMemoryLoginRateLimiter implements LoginRateLimiter {
 
     private final ConcurrentHashMap<String, Attempt> attempts = new ConcurrentHashMap<>();

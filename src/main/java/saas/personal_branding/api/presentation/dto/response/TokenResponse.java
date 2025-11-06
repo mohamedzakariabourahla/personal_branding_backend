@@ -5,5 +5,8 @@ import java.time.Instant;
 public record TokenResponse(String accessToken,
                             String refreshToken,
                             Instant refreshTokenExpiresAt,
-                            String tokenType) {
+                            Instant refreshTokenIssuedAt,
+                            String tokenType,
+                            String deviceId,
+                            String deviceName) {
 }

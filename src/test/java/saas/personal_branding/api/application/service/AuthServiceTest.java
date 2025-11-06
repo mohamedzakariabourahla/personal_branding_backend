@@ -69,6 +69,7 @@ class AuthServiceTest {
                 loginRateLimiter,
                 refreshRateLimiter,
                 emailVerificationService,
+                5,
                 meterRegistry,
                 auditLogger
         );
@@ -76,7 +77,7 @@ class AuthServiceTest {
 
     @Test
     void registerCreatesUserAndTriggersVerification() {
-        AuthService.RegisterUserCommand command = new AuthService.RegisterUserCommand("test@example.com", "Secret1!");
+        AuthService.RegisterUserCommand command = new AuthService.RegisterUserCommand(" Test@Example.com ", "Secret1!");
 
         when(userRepository.existsByEmail("test@example.com")).thenReturn(false);
         when(passwordEncoder.encode("Secret1!")).thenReturn("encoded");
@@ -114,7 +115,7 @@ class AuthServiceTest {
 
     @Test
     void authenticateRecordsFailureWhenCredentialsInvalid() {
-        AuthService.LoginCommand command = new AuthService.LoginCommand("user@example.com", "wrong-pass");
+        AuthService.LoginCommand command = new AuthService.LoginCommand("User@Example.com", "wrong-pass");
         User storedUser = User.builder()
                 .id(7L)
                 .email("user@example.com")
@@ -127,7 +128,7 @@ class AuthServiceTest {
         when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(storedUser));
         when(passwordEncoder.matches("wrong-pass", "hash")).thenReturn(false);
 
-        assertThrows(UserException.InvalidCredentialsException.class, () -> authService.authenticate(command));
+        assertThrows(UserException.InvalidCredentialsException.class, () -> authService.authenticate(command, new AuthService.DeviceMetadata(null, "My Laptop", "UA", "127.0.0.1")));
 
         verify(loginRateLimiter).checkAllowed("user@example.com");
         verify(loginRateLimiter).recordFailure("user@example.com");
@@ -166,22 +167,55 @@ class AuthServiceTest {
         when(userRepository.findById(21L)).thenReturn(Optional.of(tokenOwner));
 
         when(tokenService.generateAccessToken(tokenOwner)).thenReturn("new-access");
+        when(refreshTokenRepository.revokeByUserIdAndDeviceId(eq(21L), anyString())).thenReturn(1);
+        when(refreshTokenRepository.findActiveByUserId(21L)).thenReturn(java.util.List.of());
         when(refreshTokenRepository.save(any(RefreshToken.class))).thenAnswer(invocation -> {
             RefreshToken toSave = invocation.getArgument(0);
             return toSave.toBuilder().id(99L).build();
         });
 
-        AuthService.AuthResult result = authService.refreshTokens(command);
+        AuthService.AuthResult result = authService.refreshTokens(command, new AuthService.DeviceMetadata(null, null, "UA", "127.0.0.1"));
 
         assertEquals(tokenOwner, result.user());
         assertEquals("new-access", result.accessToken());
         assertNotNull(result.refreshToken());
         assertEquals(clock.instant().plus(refreshTokenTtl), result.refreshTokenExpiresAt());
+        assertNotNull(result.deviceId());
 
         verify(refreshRateLimiter).checkAllowed(incomingToken);
         verify(refreshTokenRepository).revokeById(11L);
-        verify(refreshTokenRepository).revokeAllByUserId(21L);
+        verify(refreshTokenRepository).revokeByUserIdAndDeviceId(eq(21L), anyString());
         verify(refreshRateLimiter).recordSuccess(incomingToken);
         assertEquals(2.0, meterRegistry.get("security.refresh.revoked").counter().count());
+    }
+
+    @Test
+    void listSessionsFiltersExpiredTokens() {
+        RefreshToken active = RefreshToken.builder()
+                .id(1L)
+                .userId(5L)
+                .tokenHash("hash")
+                .expiresAt(clock.instant().plusSeconds(60))
+                .revoked(false)
+                .createdAt(clock.instant().minusSeconds(120))
+                .deviceId("device-1")
+                .deviceName("MacBook")
+                .userAgent("UA")
+                .ipAddress("127.0.0.1")
+                .lastUsedAt(clock.instant().minusSeconds(30))
+                .build();
+        RefreshToken expired = active.toBuilder()
+                .id(2L)
+                .deviceId("device-2")
+                .expiresAt(clock.instant().minusSeconds(5))
+                .lastUsedAt(clock.instant().minusSeconds(10))
+                .build();
+
+        when(refreshTokenRepository.findActiveByUserId(5L)).thenReturn(java.util.List.of(active, expired));
+
+        var sessions = authService.listSessions(5L);
+
+        assertEquals(1, sessions.size());
+        assertEquals("device-1", sessions.getFirst().deviceId());
     }
 }

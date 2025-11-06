@@ -3,6 +3,7 @@ package saas.personal_branding.api.infrastructure.security;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import saas.personal_branding.api.application.exception.TokenException;
 import saas.personal_branding.api.application.service.RefreshRateLimiter;
@@ -14,6 +15,7 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Component
+@ConditionalOnProperty(value = "security.refresh.rate-limiter", havingValue = "memory", matchIfMissing = true)
 public class InMemoryRefreshRateLimiter implements RefreshRateLimiter {
 
     private final ConcurrentHashMap<String, Attempt> attempts = new ConcurrentHashMap<>();

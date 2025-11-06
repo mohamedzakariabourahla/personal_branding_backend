@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import saas.personal_branding.api.infrastructure.persistence.entity.RefreshTokenEntity;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface JpaRefreshTokenRepository extends JpaRepository<RefreshTokenEntity, Long> {
@@ -19,4 +20,13 @@ public interface JpaRefreshTokenRepository extends JpaRepository<RefreshTokenEnt
     @Modifying
     @Query("update RefreshTokenEntity rt set rt.revoked = true where rt.id = :tokenId and rt.revoked = false")
     int revokeById(@Param("tokenId") Long tokenId);
+
+    @Modifying
+    @Query("update RefreshTokenEntity rt set rt.revoked = true where rt.user.id = :userId and rt.deviceId = :deviceId and rt.revoked = false")
+    int revokeByUserIdAndDeviceId(@Param("userId") Long userId, @Param("deviceId") String deviceId);
+
+    @Query("select rt from RefreshTokenEntity rt " +
+            "where rt.user.id = :userId and rt.revoked = false " +
+            "order by rt.lastUsedAt desc")
+    List<RefreshTokenEntity> findActiveByUserIdOrderByLastUsedAtDesc(@Param("userId") Long userId);
 }

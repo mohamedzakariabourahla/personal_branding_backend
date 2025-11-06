@@ -41,12 +41,13 @@ public class BeanConfig {
                                    LoginRateLimiter loginRateLimiter,
                                    RefreshRateLimiter refreshRateLimiter,
                                    EmailVerificationService emailVerificationService,
+                                   @Value("${security.sessions.max-active:5}") int maxActiveSessions,
                                    MeterRegistry meterRegistry,
                                    SecurityAuditLogger securityAuditLogger) {
         java.time.Duration refreshTtl = jwtProperties.refreshTokenTtl() != null
                 ? jwtProperties.refreshTokenTtl()
                 : java.time.Duration.ofDays(7);
-        return new AuthService(userRepository, refreshTokenRepository, passwordEncoder, tokenService, tokenHashService, clock, refreshTtl, loginRateLimiter, refreshRateLimiter, emailVerificationService, meterRegistry, securityAuditLogger);
+        return new AuthService(userRepository, refreshTokenRepository, passwordEncoder, tokenService, tokenHashService, clock, refreshTtl, loginRateLimiter, refreshRateLimiter, emailVerificationService, maxActiveSessions, meterRegistry, securityAuditLogger);
     }
 
     @Bean

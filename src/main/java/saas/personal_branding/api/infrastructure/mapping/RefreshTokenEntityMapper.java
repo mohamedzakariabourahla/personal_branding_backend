@@ -22,6 +22,11 @@ public final class RefreshTokenEntityMapper {
                 .expiresAt(entity.getExpiresAt())
                 .revoked(entity.isRevoked())
                 .createdAt(entity.getCreatedAt())
+                .deviceId(entity.getDeviceId())
+                .deviceName(entity.getDeviceName())
+                .userAgent(entity.getUserAgent())
+                .ipAddress(entity.getIpAddress())
+                .lastUsedAt(entity.getLastUsedAt())
                 .build();
     }
 
@@ -30,6 +35,12 @@ public final class RefreshTokenEntityMapper {
         target.setTokenHash(source.getTokenHash());
         target.setExpiresAt(source.getExpiresAt());
         target.setRevoked(source.isRevoked());
-        target.setCreatedAt(source.getCreatedAt() != null ? source.getCreatedAt() : Instant.now());
+        Instant createdAt = source.getCreatedAt() != null ? source.getCreatedAt() : Instant.now();
+        target.setCreatedAt(createdAt);
+        target.setDeviceId(source.getDeviceId());
+        target.setDeviceName(source.getDeviceName());
+        target.setUserAgent(source.getUserAgent());
+        target.setIpAddress(source.getIpAddress());
+        target.setLastUsedAt(source.getLastUsedAt() != null ? source.getLastUsedAt() : createdAt);
     }
 }

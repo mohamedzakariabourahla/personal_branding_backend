@@ -8,6 +8,7 @@ import saas.personal_branding.api.domain.model.PasswordResetToken;
 import saas.personal_branding.api.domain.model.User;
 import saas.personal_branding.api.domain.repository.PasswordResetTokenRepository;
 import saas.personal_branding.api.domain.repository.UserRepository;
+import saas.personal_branding.api.domain.util.EmailNormalizer;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -47,7 +48,12 @@ public class PasswordResetService {
     }
 
     public RequestResetResult requestPasswordReset(String email) {
-        Optional<User> userOpt = userRepository.findByEmail(email);
+        String normalizedEmail = EmailNormalizer.normalize(email);
+        if (normalizedEmail == null || normalizedEmail.isEmpty()) {
+            return RequestResetResult.notIssued();
+        }
+
+        Optional<User> userOpt = userRepository.findByEmail(normalizedEmail);
         if (userOpt.isEmpty()) {
             return RequestResetResult.notIssued();
         }

@@ -1,6 +1,5 @@
 package saas.personal_branding.api.presentation.dto.request;
 
-import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -8,6 +7,5 @@ import lombok.Setter;
 @Setter
 public class LogoutRequest {
 
-    @NotBlank
     private String refreshToken;
 }

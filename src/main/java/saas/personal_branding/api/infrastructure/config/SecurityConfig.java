@@ -28,8 +28,12 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/login", "/api/auth/refresh",
+                                "/api/auth/logout", "/api/auth/email/verify", "/api/auth/email/resend-guest",
+                                "/api/auth/password/reset-request", "/api/auth/password/reset").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/email/resend").authenticated()
-                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/auth/sessions").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/auth/sessions/**").authenticated()
                         .requestMatchers("/api/reference-data/**").permitAll()
                         .anyRequest().authenticated()
                 )

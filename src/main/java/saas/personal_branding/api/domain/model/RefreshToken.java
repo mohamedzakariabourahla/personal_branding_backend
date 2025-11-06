@@ -17,8 +17,13 @@ public class RefreshToken {
     private final Instant expiresAt;
     private final boolean revoked;
     private final Instant createdAt;
+    private final String deviceId;
+    private final String deviceName;
+    private final String userAgent;
+    private final String ipAddress;
+    private final Instant lastUsedAt;
 
     public boolean isExpired(Instant referenceTime) {
-        return expiresAt.isBefore(referenceTime);
+        return expiresAt != null && expiresAt.isBefore(referenceTime);
     }
 }

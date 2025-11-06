@@ -120,7 +120,10 @@ public final class UserDtoMapper {
                         authResult.accessToken(),
                         authResult.refreshToken(),
                         authResult.refreshTokenExpiresAt(),
-                        "Bearer"
+                        authResult.refreshTokenIssuedAt(),
+                        "Bearer",
+                        authResult.deviceId(),
+                        authResult.deviceName()
                 )
         );
     }

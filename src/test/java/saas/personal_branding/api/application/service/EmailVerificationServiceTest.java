@@ -150,7 +150,7 @@ class EmailVerificationServiceTest {
         when(tokenHashService.hash(anyString())).thenAnswer(invocation -> invocation.getArgument(0) + "-hash");
         when(tokenRepository.save(any(EmailVerificationToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        Optional<Instant> maybeExpires = service.resendVerificationForEmail("pending@example.com");
+        Optional<Instant> maybeExpires = service.resendVerificationForEmail(" Pending@Example.COM ");
 
         assertTrue(maybeExpires.isPresent());
         assertEquals(clock.instant().plus(tokenTtl), maybeExpires.get());

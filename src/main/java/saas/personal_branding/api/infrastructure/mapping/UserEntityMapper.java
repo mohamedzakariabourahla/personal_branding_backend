@@ -1,6 +1,7 @@
 package saas.personal_branding.api.infrastructure.mapping;
 
 import saas.personal_branding.api.domain.model.User;
+import saas.personal_branding.api.domain.util.EmailNormalizer;
 import saas.personal_branding.api.infrastructure.persistence.entity.UserEntity;
 
 import java.util.HashSet;
@@ -17,7 +18,7 @@ public final class UserEntityMapper {
 
         return User.builder()
                 .id(entity.getId())
-                .email(entity.getEmail())
+                .email(EmailNormalizer.normalize(entity.getEmail()))
                 .passwordHash(entity.getPasswordHash())
                 .active(Boolean.TRUE.equals(entity.getActive()))
                 .emailVerified(Boolean.TRUE.equals(entity.getEmailVerified()))
@@ -29,7 +30,7 @@ public final class UserEntityMapper {
     }
 
     public static void updateEntity(User source, UserEntity target) {
-        target.setEmail(source.getEmail());
+        target.setEmail(EmailNormalizer.normalize(source.getEmail()));
         target.setPasswordHash(source.getPasswordHash());
         target.setActive(source.isActive());
         target.setOnboardingStatus(source.getOnboardingStatus());

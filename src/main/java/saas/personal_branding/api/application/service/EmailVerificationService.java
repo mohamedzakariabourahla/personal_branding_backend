@@ -7,6 +7,7 @@ import saas.personal_branding.api.domain.model.EmailVerificationToken;
 import saas.personal_branding.api.domain.model.User;
 import saas.personal_branding.api.domain.repository.EmailVerificationTokenRepository;
 import saas.personal_branding.api.domain.repository.UserRepository;
+import saas.personal_branding.api.domain.util.EmailNormalizer;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -79,7 +80,12 @@ public class EmailVerificationService {
             return Optional.empty();
         }
 
-        return userRepository.findByEmail(email)
+        String normalizedEmail = EmailNormalizer.normalize(email);
+        if (normalizedEmail == null || normalizedEmail.isBlank()) {
+            return Optional.empty();
+        }
+
+        return userRepository.findByEmail(normalizedEmail)
                 .filter(user -> !user.isEmailVerified())
                 .map(user -> issueToken(user.getId(), user.getEmail()));
     }

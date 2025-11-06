@@ -17,4 +17,7 @@ public class LoginRequest {
     @NotBlank
     @Size(min = 8, max = 64)
     private String password;
+
+    @Size(max = 120)
+    private String deviceName;
 }

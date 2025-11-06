@@ -13,6 +13,7 @@ import saas.personal_branding.api.infrastructure.persistence.jpa.JpaUserReposito
 import java.util.List;
 import java.util.Optional;
 
+import static saas.personal_branding.api.domain.util.EmailNormalizer.normalize;
 import static saas.personal_branding.api.infrastructure.mapping.UserEntityMapper.toDomain;
 import static saas.personal_branding.api.infrastructure.mapping.UserEntityMapper.updateEntity;
 
@@ -59,14 +60,22 @@ public class UserRepositoryAdapter implements UserRepository {
     @Override
     @Transactional(readOnly = true)
     public Optional<User> findByEmail(String email) {
-        return jpaUserRepository.findByEmail(email)
+        String normalized = normalize(email);
+        if (normalized == null) {
+            return Optional.empty();
+        }
+        return jpaUserRepository.findByEmail(normalized)
                 .map(this::toDomain);
     }
 
     @Override
     @Transactional(readOnly = true)
     public boolean existsByEmail(String email) {
-        return jpaUserRepository.existsByEmail(email);
+        String normalized = normalize(email);
+        if (normalized == null) {
+            return false;
+        }
+        return jpaUserRepository.existsByEmail(normalized);
     }
 
     @Override

@@ -10,6 +10,7 @@ import saas.personal_branding.api.infrastructure.persistence.entity.UserEntity;
 import saas.personal_branding.api.infrastructure.persistence.jpa.JpaRefreshTokenRepository;
 import saas.personal_branding.api.infrastructure.persistence.jpa.JpaUserRepository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -56,4 +57,22 @@ public class RefreshTokenRepositoryAdapter implements RefreshTokenRepository {
         return jpaRefreshTokenRepository.findByTokenHashAndRevokedFalse(tokenHash)
                 .map(RefreshTokenEntityMapper::toDomain);
     }
+
+    @Override
+    public int revokeByUserIdAndDeviceId(Long userId, String deviceId) {
+        if (deviceId == null) {
+            return 0;
+        }
+        return jpaRefreshTokenRepository.revokeByUserIdAndDeviceId(userId, deviceId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<RefreshToken> findActiveByUserId(Long userId) {
+        return jpaRefreshTokenRepository.findActiveByUserIdOrderByLastUsedAtDesc(userId)
+                .stream()
+                .map(RefreshTokenEntityMapper::toDomain)
+                .toList();
+    }
 }
+
