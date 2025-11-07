@@ -1,6 +1,5 @@
--- ===============================================
--- SEED DATA
--- ===============================================
+-- Repeatable Flyway migration to keep reference data aligned across environments.
+-- Safe to run multiple times thanks to ON CONFLICT DO NOTHING guards.
 
 INSERT INTO niches (name) VALUES
     ('Personal Development'),

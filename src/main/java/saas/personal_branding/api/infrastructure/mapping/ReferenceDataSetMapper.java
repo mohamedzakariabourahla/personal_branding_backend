@@ -49,6 +49,16 @@ public final class ReferenceDataSetMapper {
                 .build());
     }
 
+    public static Platform mapPlatform(PlatformEntity entity) {
+        if (entity == null) {
+            return null;
+        }
+        return Platform.builder()
+                .id(entity.getId())
+                .name(entity.getName())
+                .build();
+    }
+
     public static Set<Country> mapCountries(Set<CountryEntity> entities) {
         return mapReference(entities, entity -> Country.builder()
                 .id(entity.getId())

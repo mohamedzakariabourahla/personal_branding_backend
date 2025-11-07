@@ -2,6 +2,7 @@ package saas.personal_branding.api.domain.repository;
 
 import saas.personal_branding.api.domain.model.*;
 
+import java.util.Optional;
 import java.util.Set;
 
 public interface ReferenceDataRepository {
@@ -18,4 +19,6 @@ public interface ReferenceDataRepository {
     Set<Platform> findAllPlatforms();
     Set<Country> findAllCountries();
     Set<PostingFrequency> findAllPostingFrequencies();
+
+    Optional<Platform> findPlatformByName(String name);
 }

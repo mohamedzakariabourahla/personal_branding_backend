@@ -9,6 +9,7 @@ import saas.personal_branding.api.domain.model.Platform;
 import saas.personal_branding.api.domain.model.PostingFrequency;
 import saas.personal_branding.api.domain.model.Tone;
 import saas.personal_branding.api.domain.repository.ReferenceDataRepository;
+import saas.personal_branding.api.infrastructure.mapping.ReferenceDataSetMapper;
 import saas.personal_branding.api.infrastructure.persistence.entity.*;
 import saas.personal_branding.api.infrastructure.persistence.jpa.*;
 
@@ -20,6 +21,7 @@ import static saas.personal_branding.api.infrastructure.mapping.ReferenceDataSet
 import static saas.personal_branding.api.infrastructure.mapping.ReferenceDataSetMapper.mapCountries;
 import static saas.personal_branding.api.infrastructure.mapping.ReferenceDataSetMapper.mapNiches;
 import static saas.personal_branding.api.infrastructure.mapping.ReferenceDataSetMapper.mapPlatforms;
+import static saas.personal_branding.api.infrastructure.mapping.ReferenceDataSetMapper.mapPlatform;
 import static saas.personal_branding.api.infrastructure.mapping.ReferenceDataSetMapper.mapPostingFrequencies;
 import static saas.personal_branding.api.infrastructure.mapping.ReferenceDataSetMapper.mapTones;
 
@@ -106,6 +108,15 @@ public class ReferenceDataRepositoryAdapter implements ReferenceDataRepository {
     @Override
     public Set<PostingFrequency> findAllPostingFrequencies() {
         return mapPostingFrequencies(toSet(jpaPostingFrequencyRepository.findAll()));
+    }
+
+    @Override
+    public java.util.Optional<Platform> findPlatformByName(String name) {
+        if (name == null || name.isBlank()) {
+            return java.util.Optional.empty();
+        }
+        return jpaPlatformRepository.findByNameIgnoreCase(name.trim())
+                .map(ReferenceDataSetMapper::mapPlatform);
     }
 
     private <E extends ReferenceDataEntity> Set<E> loadEntities(Set<Long> ids,
