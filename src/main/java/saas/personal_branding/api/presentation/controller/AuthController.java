@@ -140,6 +140,24 @@ public class AuthController {
         return ResponseEntity.ok(UserDtoMapper.toAuthResponse(result));
     }
 
+    @GetMapping("/session")
+    public ResponseEntity<AuthResponse> bootstrapSession(HttpServletRequest httpRequest,
+                                                         HttpServletResponse httpResponse) {
+        String refreshToken = resolveRefreshToken(null, httpRequest);
+        if (!StringUtils.hasText(refreshToken)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        AuthService.DeviceMetadata metadata = new AuthService.DeviceMetadata(
+                null,
+                null,
+                httpRequest.getHeader("User-Agent"),
+                resolveClientIp(httpRequest)
+        );
+        AuthService.AuthResult result = authService.refreshTokens(new AuthService.RefreshTokenCommand(refreshToken), metadata);
+        writeRefreshCookie(httpResponse, result.refreshToken(), result.refreshTokenExpiresAt());
+        return ResponseEntity.ok(UserDtoMapper.toAuthResponse(result));
+    }
+
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(@RequestBody(required = false) LogoutRequest request,
                                        HttpServletRequest httpRequest,

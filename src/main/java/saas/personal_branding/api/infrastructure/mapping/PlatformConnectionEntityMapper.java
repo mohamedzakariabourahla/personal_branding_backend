@@ -6,7 +6,6 @@ import saas.personal_branding.api.infrastructure.persistence.entity.PlatformConn
 import saas.personal_branding.api.infrastructure.persistence.entity.PlatformEntity;
 
 import java.util.Collections;
-import java.util.Map;
 
 public final class PlatformConnectionEntityMapper {
 
@@ -25,7 +24,7 @@ public final class PlatformConnectionEntityMapper {
                 .externalAccountId(entity.getExternalAccountId())
                 .externalUsername(entity.getExternalUsername())
                 .externalDisplayName(entity.getExternalDisplayName())
-                .accountMetadata(toMetadata(entity.getAccountMetadata()))
+                .accountMetadata(entity.getAccountMetadata() == null ? Collections.emptyMap() : entity.getAccountMetadata())
                 .status(entity.getStatus())
                 .lastError(entity.getLastError())
                 .lastSyncedAt(entity.getLastSyncedAt())
@@ -38,7 +37,7 @@ public final class PlatformConnectionEntityMapper {
         target.setExternalAccountId(source.getExternalAccountId());
         target.setExternalUsername(source.getExternalUsername());
         target.setExternalDisplayName(source.getExternalDisplayName());
-        target.setAccountMetadata(JsonConversionUtils.toJson(source.getAccountMetadata()));
+        target.setAccountMetadata(source.getAccountMetadata());
         target.setStatus(source.getStatus());
         target.setLastError(source.getLastError());
         target.setLastSyncedAt(source.getLastSyncedAt());
@@ -54,7 +53,4 @@ public final class PlatformConnectionEntityMapper {
                 .build();
     }
 
-    private static Map<String, Object> toMetadata(String json) {
-        return json == null ? Collections.emptyMap() : JsonConversionUtils.toMap(json);
-    }
 }

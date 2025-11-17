@@ -1,7 +1,10 @@
 package saas.personal_branding.api.application.service.platform;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import saas.personal_branding.api.application.exception.PlatformException;
 import saas.personal_branding.api.application.port.out.meta.MetaGraphClient;
 import saas.personal_branding.api.application.service.PlatformCredentialService;
 import saas.personal_branding.api.domain.model.Platform;
@@ -23,6 +26,8 @@ import java.util.UUID;
 @Service
 @Transactional
 public class MetaOAuthApplicationService {
+
+    private static final Logger log = LoggerFactory.getLogger(MetaOAuthApplicationService.class);
 
     private final PlatformOAuthStateRepository oauthStateRepository;
     private final ReferenceDataRepository referenceDataRepository;
@@ -46,6 +51,7 @@ public class MetaOAuthApplicationService {
         Platform platform = resolvePlatform();
         String state = UUID.randomUUID().toString();
         Instant expiresAt = Instant.now().plus(properties.getStateTtl());
+        log.info("Meta OAuth start: userId={} platform={} state={}", userId, platform.getName(), state);
 
         PlatformOAuthState oauthState = PlatformOAuthState.builder()
                 .state(state)
@@ -62,7 +68,7 @@ public class MetaOAuthApplicationService {
         return new OAuthAuthorizationContext(authorizationUrl, state, expiresAt);
     }
 
-    public PlatformConnection completeAuthorization(Long userId, String state, String code) {
+    public PlatformConnection completeAuthorization(Long userId, String state, String code, String requestedPageId) {
         PlatformOAuthState oauthState = oauthStateRepository.findByState(state)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid or expired OAuth state"));
         if (!oauthState.getUserId().equals(userId)) {
@@ -76,11 +82,16 @@ public class MetaOAuthApplicationService {
         MetaGraphClient.MetaAccessToken shortToken = metaGraphClient.exchangeCodeForUserToken(code, oauthState.getRedirectUri());
         MetaGraphClient.MetaAccessToken longToken = metaGraphClient.exchangeForLongLivedUserToken(shortToken.accessToken());
 
-        List<MetaGraphClient.MetaPage> pages = metaGraphClient.fetchPages(longToken.accessToken());
-        MetaGraphClient.MetaPage pageWithInstagram = pages.stream()
+        List<MetaGraphClient.MetaPage> eligiblePages = metaGraphClient.fetchPages(longToken.accessToken()).stream()
                 .filter(page -> page.instagramAccount() != null)
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("No Instagram business account linked to Meta user"));
+                .toList();
+        if (eligiblePages.isEmpty()) {
+            log.warn("Meta OAuth no eligible accounts: userId={} state={}", userId, state);
+            throw new PlatformException.NoEligibleAccountException();
+        }
+        log.info("Meta OAuth pages fetched: userId={} state={} totalPages={}", userId, state, eligiblePages.size());
+
+        MetaGraphClient.MetaPage pageWithInstagram = resolveSelectedPage(eligiblePages, requestedPageId);
 
         MetaGraphClient.MetaInstagramAccount igAccount = pageWithInstagram.instagramAccount();
         Platform platform = oauthState.getPlatform();
@@ -118,7 +129,35 @@ public class MetaOAuthApplicationService {
         platformCredentialService.saveTokens(saved.getId(), authContext);
 
         oauthStateRepository.deleteByState(state);
+        log.info("Meta OAuth completed: userId={} state={} pageId={} instagramId={}",
+                userId, state, pageWithInstagram.id(), igAccount.id());
         return saved;
+    }
+
+    private MetaGraphClient.MetaPage resolveSelectedPage(List<MetaGraphClient.MetaPage> eligiblePages, String requestedPageId) {
+        if (requestedPageId != null && !requestedPageId.isBlank()) {
+            return eligiblePages.stream()
+                    .filter(page -> page.id().equals(requestedPageId))
+                    .findFirst()
+                    .orElseThrow(() -> {
+                        log.warn("Meta OAuth invalid selection: requestedPageId={}", requestedPageId);
+                        return new PlatformException.InvalidAccountSelectionException(requestedPageId);
+                    });
+        }
+        if (eligiblePages.size() == 1) {
+            return eligiblePages.get(0);
+        }
+        List<PlatformException.PlatformSelectionCandidate> candidates = eligiblePages.stream()
+                .map(page -> new PlatformException.PlatformSelectionCandidate(
+                        page.id(),
+                        page.name(),
+                        page.instagramAccount().id(),
+                        page.instagramAccount().username(),
+                        page.instagramAccount().name()
+                ))
+                .toList();
+        log.info("Meta OAuth selection required: candidates={}", candidates.size());
+        throw new PlatformException.SelectionRequiredException(candidates);
     }
 
     private Platform resolvePlatform() {

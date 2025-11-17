@@ -2,9 +2,12 @@ package saas.personal_branding.api.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import saas.personal_branding.api.domain.model.PlatformConnectionStatus;
 
 import java.time.Instant;
+import java.util.Map;
 
 @Entity
 @Table(name = "platform_connections",
@@ -38,8 +41,9 @@ public class PlatformConnectionEntity {
     @Column(name = "external_display_name", length = 255)
     private String externalDisplayName;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "account_metadata", columnDefinition = "jsonb")
-    private String accountMetadata;
+    private Map<String, Object> accountMetadata;
 
     @Builder.Default
     @Enumerated(EnumType.STRING)

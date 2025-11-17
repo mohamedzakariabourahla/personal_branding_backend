@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 
 public record PlatformOAuthCallbackRequest(
         @NotBlank String state,
-        @NotBlank String code
+        @NotBlank String code,
+        String pageId
 ) {
 }

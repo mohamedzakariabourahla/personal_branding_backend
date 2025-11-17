@@ -1,6 +1,8 @@
 package saas.personal_branding.api.presentation.controller;
 
 import jakarta.validation.ConstraintViolationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -10,6 +12,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import saas.personal_branding.api.application.exception.BusinessException;
+import saas.personal_branding.api.application.exception.PlatformException;
 import saas.personal_branding.api.application.exception.TokenException;
 import saas.personal_branding.api.application.exception.UserException;
 
@@ -20,6 +23,8 @@ import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ProblemDetail> handleMethodArgumentNotValid(MethodArgumentNotValidException ex) {
@@ -55,6 +60,12 @@ public class GlobalExceptionHandler {
         HttpStatus status = HttpStatus.CONFLICT;
         HttpHeaders headers = new HttpHeaders();
 
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(status, ex.getMessage());
+        problemDetail.setTitle(status.getReasonPhrase());
+        problemDetail.setProperty("timestamp", Instant.now());
+        problemDetail.setProperty("code", ex.getErrorCode());
+        problemDetail.setProperty("errorCode", ex.getErrorCode());
+        
         if (ex instanceof UserException.InvalidCredentialsException) {
             status = HttpStatus.UNAUTHORIZED;
         } else if (ex instanceof UserException.InactiveAccountException) {
@@ -80,13 +91,18 @@ public class GlobalExceptionHandler {
             status = HttpStatus.BAD_REQUEST;
         } else if (ex instanceof TokenException.EmailVerificationTokenExpiredException) {
             status = HttpStatus.BAD_REQUEST;
+        } else if (ex instanceof PlatformException.SelectionRequiredException selectionRequiredException) {
+            status = HttpStatus.CONFLICT;
+            problemDetail.setProperty("candidates", selectionRequiredException.getCandidates());
+        } else if (ex instanceof PlatformException.NoEligibleAccountException) {
+            status = HttpStatus.UNPROCESSABLE_ENTITY;
+        } else if (ex instanceof PlatformException.InvalidAccountSelectionException) {
+            status = HttpStatus.BAD_REQUEST;
+        } else if (ex instanceof PlatformException.ProviderCommunicationException) {
+            status = HttpStatus.BAD_GATEWAY;
         }
 
-        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(status, ex.getMessage());
-        problemDetail.setTitle(status.getReasonPhrase());
-        problemDetail.setProperty("timestamp", Instant.now());
-        problemDetail.setProperty("code", ex.getErrorCode());
-        problemDetail.setProperty("errorCode", ex.getErrorCode());
+        
 
         if (ex instanceof UserException.TooManyLoginAttemptsException tooManyLoginAttemptsException) {
             problemDetail.setProperty("retryAfterSeconds", tooManyLoginAttemptsException.getRetryAfterSeconds());
@@ -101,6 +117,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ProblemDetail> handleIllegalArgument(IllegalArgumentException ex) {
+        log.warn("Illegal argument", ex);
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
         problemDetail.setTitle("Invalid Argument");
         problemDetail.setProperty("timestamp", Instant.now());
@@ -110,6 +127,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ProblemDetail> handleOtherExceptions(Exception ex) {
+        log.error("Unhandled exception", ex);
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, "Internal Server Error");
         problemDetail.setTitle("Unexpected Error");
         problemDetail.setProperty("timestamp", Instant.now());

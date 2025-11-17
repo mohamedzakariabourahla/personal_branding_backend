@@ -15,6 +15,7 @@ import saas.personal_branding.api.domain.util.EmailNormalizer;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.UUID;
 
@@ -257,7 +258,7 @@ public class AuthService {
             return;
         }
 
-        var activeTokens = refreshTokenRepository.findActiveByUserId(userId);
+        var activeTokens = new ArrayList<>(refreshTokenRepository.findActiveByUserId(userId));
         int activeCount = activeTokens.size();
         if (activeCount <= maxActiveSessions) {
             return;
