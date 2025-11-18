@@ -1,35 +1,43 @@
 package saas.personal_branding.api.infrastructure.mail;
 
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
+import jakarta.validation.constraints.NotBlank;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StreamUtils;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.client.RestClient;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 @Component
+@EnableConfigurationProperties(MailService.ProviderProperties.class)
 public class MailService {
 
-    private final JavaMailSender mailSender;
     private final ResourceLoader resourceLoader;
     private final String fromAddress;
+    private final RestClient resendClient;
 
-    public MailService(JavaMailSender mailSender,
-                       ResourceLoader resourceLoader,
-                       @Value("${app.mail.from}") String fromAddress) {
-        this.mailSender = mailSender;
+    public MailService(ResourceLoader resourceLoader,
+                       @Value("${app.mail.from}") String fromAddress,
+                       ProviderProperties providerProperties) {
         this.resourceLoader = resourceLoader;
         if (fromAddress == null || fromAddress.isBlank()) {
             throw new IllegalStateException("app.mail.from must be configured");
         }
         this.fromAddress = fromAddress;
+        this.resendClient = RestClient.builder()
+                .baseUrl(providerProperties.baseUrl())
+                .defaultHeader("Authorization", "Bearer " + providerProperties.apiKey())
+                .defaultHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
+                .build();
     }
 
     public void sendPasswordResetEmail(String to, String resetLink) {
@@ -55,13 +63,6 @@ public class MailService {
 
     private void sendTemplatedEmail(String to, String subject, String templateBase, Map<String, String> variables) {
         try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED, StandardCharsets.UTF_8.name());
-
-            helper.setFrom(fromAddress);
-            helper.setTo(to);
-            helper.setSubject(subject);
-
             String textTemplate = loadTemplate(templateBase + ".txt");
             String htmlTemplate = loadTemplate(templateBase + ".html");
 
@@ -73,10 +74,18 @@ public class MailService {
             String textBody = applyVariables(baselineTemplate, variables);
             String htmlBody = htmlTemplate != null ? applyVariables(htmlTemplate, variables) : textBody;
 
-            helper.setText(textBody, htmlBody);
-
-            mailSender.send(message);
-        } catch (MessagingException | IOException e) {
+            resendClient.post()
+                    .uri("/emails")
+                    .body(Map.of(
+                            "from", fromAddress,
+                            "to", to,
+                            "subject", subject,
+                            "text", textBody,
+                            "html", htmlBody
+                    ))
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (IOException e) {
             throw new IllegalStateException("Failed to send email", e);
         }
     }
@@ -101,5 +110,13 @@ public class MailService {
             result = result.replace("{{" + entry.getKey() + "}}", entry.getValue());
         }
         return result;
+    }
+
+    @Validated
+    @ConfigurationProperties(prefix = "app.mail.resend")
+    public record ProviderProperties(
+            @NotBlank String apiKey,
+            @NotBlank String baseUrl
+    ) {
     }
 }

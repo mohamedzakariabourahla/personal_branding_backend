@@ -9,6 +9,10 @@ Spring Boot service that powers authentication, reference data, and provider int
 3. Start supporting services via `docker compose -f ../infra/docker-compose.yml up -d`.
 4. Boot the API with `mvn spring-boot:run` (the `local` profile is enabled automatically when `APP_PROFILE=local` or via `-Dspring.profiles.active=local`).
 
+## Email delivery
+
+Transactional emails (password reset, verification) are sent through the configured HTTP provider (Resend by default). Set `MAIL_PROVIDER_API_KEY` (and optionally `MAIL_PROVIDER_BASE_URL`) along with `MAIL_FROM`, making sure the sender address is verified. If you prefer SMTP, adjust `MailService` accordingly.
+
 ## Provider Onboarding
 
 - **Meta / Instagram** – requires a Business Manager app, tester roles, linked IG business accounts, and specific redirect URIs. Follow the step-by-step checklist in [`../docs/meta-connector-setup.md`](../docs/meta-connector-setup.md) before attempting OAuth locally. Those instructions now also cover the prerequisite Page + IG linking TikTok needs when sharing Business assets.
