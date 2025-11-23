@@ -14,6 +14,12 @@ public class UserException {
         }
     }
 
+    public static class EmailNotRegisteredException extends BusinessException {
+        public EmailNotRegisteredException(String email) {
+            super("No account found for this email. Please sign up first.", "USER_NOT_REGISTERED");
+        }
+    }
+
     public static class UserNotFoundException extends BusinessException {
         public UserNotFoundException(Long userId) {
             super("User not found with id: " + userId, "USER_NOT_FOUND");
@@ -67,6 +73,18 @@ public class UserException {
 
         public long getRetryAfterSeconds() {
             return retryAfterSeconds;
+        }
+    }
+
+    public static class EmailVerificationServiceUnavailableException extends BusinessException {
+        public EmailVerificationServiceUnavailableException() {
+            super("Email verification is temporarily unavailable. Please try again in a moment.", "EMAIL_VERIFICATION_UNAVAILABLE");
+        }
+    }
+
+    public static class EmailDispatchFailedException extends BusinessException {
+        public EmailDispatchFailedException(String detail) {
+            super(detail, "EMAIL_DISPATCH_FAILED");
         }
     }
 }

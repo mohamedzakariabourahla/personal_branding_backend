@@ -20,8 +20,15 @@ public class DefaultPlatformPublisherRegistry implements PlatformPublisherRegist
         if (platform == null) {
             return Optional.empty();
         }
+        String code = platform.getCode();
+        String name = platform.getName();
         return publishers.stream()
-                .filter(publisher -> publisher.supports(platform))
+                .filter(publisher -> {
+                    if (code != null && !code.isBlank()) {
+                        return publisher.supports(platform);
+                    }
+                    return publisher.supports(platform);
+                })
                 .findFirst();
     }
 }

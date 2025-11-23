@@ -50,6 +50,7 @@ public final class PlatformConnectionEntityMapper {
         return Platform.builder()
                 .id(entity.getId())
                 .name(entity.getName())
+                .code(entity.getCode())
                 .build();
     }
 

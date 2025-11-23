@@ -1,31 +1,41 @@
 package saas.personal_branding.api.infrastructure.config;
 
-import io.micrometer.core.instrument.MeterRegistry;
+import java.time.Clock;
+
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
+
+import io.micrometer.core.instrument.MeterRegistry;
 import saas.personal_branding.api.application.service.AuthService;
-import saas.personal_branding.api.application.service.LoginRateLimiter;
-import saas.personal_branding.api.application.service.RefreshRateLimiter;
-import saas.personal_branding.api.application.service.OnboardingService;
-import saas.personal_branding.api.application.service.ReferenceDataService;
-import saas.personal_branding.api.application.service.PasswordResetService;
-import saas.personal_branding.api.application.service.PasswordResetNotifier;
-import saas.personal_branding.api.application.service.EmailVerificationService;
 import saas.personal_branding.api.application.service.EmailVerificationNotifier;
+import saas.personal_branding.api.application.service.EmailVerificationService;
+import saas.personal_branding.api.application.service.LoginRateLimiter;
+import saas.personal_branding.api.application.service.OnboardingService;
+import saas.personal_branding.api.application.service.PasswordResetNotifier;
+import saas.personal_branding.api.application.service.PasswordResetService;
+import saas.personal_branding.api.application.service.PublishingJobService;
+import saas.personal_branding.api.application.service.ReferenceDataService;
+import saas.personal_branding.api.application.service.RefreshRateLimiter;
 import saas.personal_branding.api.application.service.SecurityAuditLogger;
 import saas.personal_branding.api.application.service.TokenHashService;
 import saas.personal_branding.api.application.service.TokenService;
+import saas.personal_branding.api.domain.repository.EmailVerificationTokenRepository;
+import saas.personal_branding.api.domain.repository.PasswordResetTokenRepository;
 import saas.personal_branding.api.domain.repository.PersonRepository;
 import saas.personal_branding.api.domain.repository.ReferenceDataRepository;
 import saas.personal_branding.api.domain.repository.RefreshTokenRepository;
-import saas.personal_branding.api.domain.repository.PasswordResetTokenRepository;
-import saas.personal_branding.api.domain.repository.EmailVerificationTokenRepository;
 import saas.personal_branding.api.domain.repository.UserRepository;
+import saas.personal_branding.api.domain.scheduling.PublishingAttemptRepository;
+import saas.personal_branding.api.domain.scheduling.PublishingJobQueue;
+import saas.personal_branding.api.domain.scheduling.PublishingJobRepository;
+import saas.personal_branding.api.infrastructure.scheduling.InMemoryPublishingJobQueue;
+import saas.personal_branding.api.infrastructure.scheduling.InMemoryPublishingJobRepository;
 import saas.personal_branding.api.infrastructure.security.JwtProperties;
-
-import java.time.Clock;
 
 @Configuration
 public class BeanConfig {
@@ -82,8 +92,36 @@ public class BeanConfig {
                                                              Clock clock,
                                                              @Value("${app.mail.verify-base-url}") String verifyBaseUrl,
                                                              @Value("${security.email-verification.token-ttl:PT24H}") java.time.Duration tokenTtl,
-                                                             SecurityAuditLogger securityAuditLogger) {
-        return new EmailVerificationService(userRepository, emailVerificationTokenRepository, tokenHashService, notifier, clock, verifyBaseUrl, tokenTtl, securityAuditLogger);
+                                                             SecurityAuditLogger securityAuditLogger,
+                                                             @Value("${app.mail.max-attempts-before-abort:0}") int maxEmailFailuresBeforeAbort) {
+        return new EmailVerificationService(userRepository, emailVerificationTokenRepository, tokenHashService, notifier, clock, verifyBaseUrl, tokenTtl, securityAuditLogger, maxEmailFailuresBeforeAbort);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(PublishingJobRepository.class)
+    @Profile("test")
+    public PublishingJobRepository inMemoryPublishingJobRepository() {
+        return new InMemoryPublishingJobRepository();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(PublishingJobQueue.class)
+    @Profile("test")
+    public PublishingJobQueue inMemoryPublishingJobQueue() {
+        return new InMemoryPublishingJobQueue();
+    }
+
+    @Bean
+    @ConditionalOnBean({
+            PublishingJobRepository.class,
+            PublishingJobQueue.class
+    })
+    public PublishingJobService publishingJobService(
+            PublishingJobRepository repository,
+            PublishingAttemptRepository attemptRepository,
+            PublishingJobQueue queue,
+            Clock clock) {
+        return new saas.personal_branding.api.application.service.PublishingJobService(repository, attemptRepository, queue, clock);
     }
 
     @Bean

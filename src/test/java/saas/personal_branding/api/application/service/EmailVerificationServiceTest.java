@@ -54,6 +54,7 @@ class EmailVerificationServiceTest {
                 tokenTtl,
                 auditLogger
         );
+        
     }
 
     @Test

@@ -118,9 +118,6 @@ public final class UserDtoMapper {
                 toUserResponse(authResult.user()),
                 new TokenResponse(
                         authResult.accessToken(),
-                        authResult.refreshToken(),
-                        authResult.refreshTokenExpiresAt(),
-                        authResult.refreshTokenIssuedAt(),
                         "Bearer",
                         authResult.deviceId(),
                         authResult.deviceName()

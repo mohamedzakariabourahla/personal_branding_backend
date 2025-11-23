@@ -9,7 +9,9 @@ import java.util.Map;
 public record PlatformConnectionResponse(
         Long id,
         Long userId,
+        Long platformId,
         String platformName,
+        String platformCode,
         String externalAccountId,
         String externalUsername,
         String externalDisplayName,

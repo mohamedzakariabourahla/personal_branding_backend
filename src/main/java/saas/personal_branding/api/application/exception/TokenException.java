@@ -4,7 +4,7 @@ public class TokenException {
 
     public static class RefreshTokenNotFoundException extends BusinessException {
         public RefreshTokenNotFoundException() {
-            super("Refresh token is invalid", "REFRESH_TOKEN_NOT_FOUND");
+            super("Session not found or expired. Please sign in.", "REFRESH_TOKEN_NOT_FOUND");
         }
     }
 

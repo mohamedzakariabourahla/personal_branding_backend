@@ -33,10 +33,8 @@ import saas.personal_branding.api.domain.util.EmailNormalizer;
 import saas.personal_branding.api.presentation.dto.request.EmailVerificationConfirmRequest;
 import saas.personal_branding.api.presentation.dto.request.EmailVerificationResendRequest;
 import saas.personal_branding.api.presentation.dto.request.LoginRequest;
-import saas.personal_branding.api.presentation.dto.request.LogoutRequest;
 import saas.personal_branding.api.presentation.dto.request.PasswordResetConfirmRequest;
 import saas.personal_branding.api.presentation.dto.request.PasswordResetInitiateRequest;
-import saas.personal_branding.api.presentation.dto.request.RefreshTokenRequest;
 import saas.personal_branding.api.presentation.dto.request.RegisterRequest;
 import saas.personal_branding.api.presentation.dto.response.AuthResponse;
 import saas.personal_branding.api.presentation.dto.response.RegistrationPendingResponse;
@@ -122,10 +120,9 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<AuthResponse> refresh(@RequestBody(required = false) RefreshTokenRequest request,
-                                                HttpServletRequest httpRequest,
+    public ResponseEntity<AuthResponse> refresh(HttpServletRequest httpRequest,
                                                 HttpServletResponse httpResponse) {
-        String refreshToken = resolveRefreshToken(request != null ? request.getRefreshToken() : null, httpRequest);
+        String refreshToken = resolveRefreshToken(httpRequest);
         if (!StringUtils.hasText(refreshToken)) {
             throw new TokenException.RefreshTokenNotFoundException();
         }
@@ -143,7 +140,7 @@ public class AuthController {
     @GetMapping("/session")
     public ResponseEntity<AuthResponse> bootstrapSession(HttpServletRequest httpRequest,
                                                          HttpServletResponse httpResponse) {
-        String refreshToken = resolveRefreshToken(null, httpRequest);
+        String refreshToken = resolveRefreshToken(httpRequest);
         if (!StringUtils.hasText(refreshToken)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
@@ -159,10 +156,9 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(@RequestBody(required = false) LogoutRequest request,
-                                       HttpServletRequest httpRequest,
+    public ResponseEntity<Void> logout(HttpServletRequest httpRequest,
                                        HttpServletResponse httpResponse) {
-        String refreshToken = resolveRefreshToken(request != null ? request.getRefreshToken() : null, httpRequest);
+        String refreshToken = resolveRefreshToken(httpRequest);
         if (StringUtils.hasText(refreshToken)) {
             try {
                 authService.logout(refreshToken);
@@ -261,10 +257,7 @@ public class AuthController {
         return request.getRemoteAddr();
     }
 
-    private String resolveRefreshToken(String candidate, HttpServletRequest request) {
-        if (StringUtils.hasText(candidate)) {
-            return candidate.trim();
-        }
+    private String resolveRefreshToken(HttpServletRequest request) {
         if (request == null || request.getCookies() == null) {
             return null;
         }

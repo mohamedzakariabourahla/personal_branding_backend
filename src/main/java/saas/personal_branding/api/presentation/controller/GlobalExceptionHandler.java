@@ -74,6 +74,10 @@ public class GlobalExceptionHandler {
             status = HttpStatus.FORBIDDEN;
         } else if (ex instanceof UserException.EmailAlreadyVerifiedException) {
             status = HttpStatus.CONFLICT;
+        } else if (ex instanceof UserException.EmailVerificationServiceUnavailableException) {
+            status = HttpStatus.SERVICE_UNAVAILABLE;
+        } else if (ex instanceof UserException.EmailDispatchFailedException) {
+            status = HttpStatus.SERVICE_UNAVAILABLE;
         } else if (ex instanceof UserException.TooManyLoginAttemptsException tooManyLoginAttemptsException) {
             status = HttpStatus.TOO_MANY_REQUESTS;
             headers.set(HttpHeaders.RETRY_AFTER, String.valueOf(tooManyLoginAttemptsException.getRetryAfterSeconds()));

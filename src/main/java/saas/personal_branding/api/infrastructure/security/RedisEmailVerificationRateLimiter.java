@@ -52,6 +52,7 @@ public class RedisEmailVerificationRateLimiter implements EmailVerificationRateL
             }
         } catch (DataAccessException ex) {
             log.warn("Redis unavailable while checking email verification rate limit", ex);
+            throw new UserException.EmailVerificationServiceUnavailableException();
         }
     }
 
@@ -65,6 +66,7 @@ public class RedisEmailVerificationRateLimiter implements EmailVerificationRateL
             sentCounter.increment();
         } catch (DataAccessException ex) {
             log.warn("Redis unavailable while recording email verification attempt", ex);
+            throw new UserException.EmailVerificationServiceUnavailableException();
         }
     }
 

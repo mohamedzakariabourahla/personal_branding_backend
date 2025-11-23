@@ -46,6 +46,7 @@ public final class ReferenceDataSetMapper {
         return mapReference(entities, entity -> Platform.builder()
                 .id(entity.getId())
                 .name(entity.getName())
+                .code(entity.getCode())
                 .build());
     }
 
@@ -56,6 +57,7 @@ public final class ReferenceDataSetMapper {
         return Platform.builder()
                 .id(entity.getId())
                 .name(entity.getName())
+                .code(entity.getCode())
                 .build();
     }
 

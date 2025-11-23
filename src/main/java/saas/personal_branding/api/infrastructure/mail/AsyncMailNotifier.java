@@ -1,6 +1,5 @@
 package saas.personal_branding.api.infrastructure.mail;
 
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import saas.personal_branding.api.application.service.EmailVerificationNotifier;
 import saas.personal_branding.api.application.service.PasswordResetNotifier;
@@ -8,19 +7,19 @@ import saas.personal_branding.api.application.service.PasswordResetNotifier;
 @Component
 public class AsyncMailNotifier implements PasswordResetNotifier, EmailVerificationNotifier {
 
-    private final ApplicationEventPublisher eventPublisher;
+    private final MailService mailService;
 
-    public AsyncMailNotifier(ApplicationEventPublisher eventPublisher) {
-        this.eventPublisher = eventPublisher;
+    public AsyncMailNotifier(MailService mailService) {
+        this.mailService = mailService;
     }
 
     @Override
     public void sendPasswordResetEmail(String to, String resetLink) {
-        eventPublisher.publishEvent(new PasswordResetEmailRequestedEvent(to, resetLink));
+        mailService.sendPasswordResetEmail(to, resetLink);
     }
 
     @Override
     public void sendEmailVerificationEmail(String email, String verificationLink, String token) {
-        eventPublisher.publishEvent(new EmailVerificationEmailRequestedEvent(email, verificationLink, token));
+        mailService.sendEmailVerificationEmail(email, verificationLink, token);
     }
 }

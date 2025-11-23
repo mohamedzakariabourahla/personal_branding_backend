@@ -10,4 +10,5 @@ import lombok.Getter;
 public class Platform {
     private final Long id;
     private final String name;
+    private final String code;
 }

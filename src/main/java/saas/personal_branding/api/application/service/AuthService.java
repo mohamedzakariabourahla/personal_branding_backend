@@ -104,7 +104,7 @@ public class AuthService {
         }
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(UserException.InvalidCredentialsException::new);
+                .orElseThrow(() -> new UserException.EmailNotRegisteredException(email));
 
         if (!user.isActive()) {
             throw new UserException.InactiveAccountException(user.getId());

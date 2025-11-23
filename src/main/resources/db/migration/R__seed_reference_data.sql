@@ -99,14 +99,14 @@ INSERT INTO tones (name) VALUES
     ('Neutral')
 ON CONFLICT (name) DO NOTHING;
 
-INSERT INTO platforms (name) VALUES
-    ('Twitter/X'),
-    ('Instagram'),
-    ('YouTube'),
-    ('TikTok'),
-    ('Facebook'),
-    ('Threads')
-ON CONFLICT (name) DO NOTHING;
+INSERT INTO platforms (name, code) VALUES
+    ('Twitter/X', 'twitter'),
+    ('Instagram', 'instagram'),
+    ('YouTube', 'youtube'),
+    ('TikTok', 'tiktok'),
+    ('Facebook', 'facebook'),
+    ('Threads', 'threads')
+ON CONFLICT (name) DO UPDATE SET code = EXCLUDED.code;
 
 INSERT INTO posting_frequencies (name) VALUES
     ('Twice a day'),

@@ -1,14 +1,5 @@
 package saas.personal_branding.api.application.service;
 
-import org.springframework.transaction.annotation.Transactional;
-import saas.personal_branding.api.application.exception.TokenException;
-import saas.personal_branding.api.application.exception.UserException;
-import saas.personal_branding.api.domain.model.EmailVerificationToken;
-import saas.personal_branding.api.domain.model.User;
-import saas.personal_branding.api.domain.repository.EmailVerificationTokenRepository;
-import saas.personal_branding.api.domain.repository.UserRepository;
-import saas.personal_branding.api.domain.util.EmailNormalizer;
-
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
@@ -17,6 +8,17 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.transaction.annotation.Transactional;
+
+import saas.personal_branding.api.application.exception.TokenException;
+import saas.personal_branding.api.application.exception.UserException;
+import saas.personal_branding.api.domain.model.EmailVerificationToken;
+import saas.personal_branding.api.domain.model.User;
+import saas.personal_branding.api.domain.repository.EmailVerificationTokenRepository;
+import saas.personal_branding.api.domain.repository.UserRepository;
+import saas.personal_branding.api.domain.util.EmailNormalizer;
 
 @Transactional
 public class EmailVerificationService {
@@ -29,6 +31,7 @@ public class EmailVerificationService {
     private final Duration tokenTtl;
     private final String verificationBaseUrl;
     private final SecurityAuditLogger auditLogger;
+    private final int maxEmailFailuresBeforeAbort;
 
     public EmailVerificationService(UserRepository userRepository,
                                     EmailVerificationTokenRepository tokenRepository,
@@ -37,7 +40,8 @@ public class EmailVerificationService {
                                     Clock clock,
                                     String verificationBaseUrl,
                                     Duration tokenTtl,
-                                    SecurityAuditLogger auditLogger) {
+                                    SecurityAuditLogger auditLogger,
+                                    @Value("${app.mail.max-attempts-before-abort:0}") int maxEmailFailuresBeforeAbort) {
         this.userRepository = userRepository;
         this.tokenRepository = tokenRepository;
         this.tokenHashService = tokenHashService;
@@ -46,6 +50,7 @@ public class EmailVerificationService {
         this.verificationBaseUrl = verificationBaseUrl;
         this.tokenTtl = tokenTtl;
         this.auditLogger = auditLogger;
+        this.maxEmailFailuresBeforeAbort = Math.max(0, maxEmailFailuresBeforeAbort);
     }
 
     public Instant sendVerificationEmail(Long userId, String email) {
@@ -141,7 +146,17 @@ public class EmailVerificationService {
         tokenRepository.save(token);
 
         String link = verificationBaseUrl + URLEncoder.encode(rawToken, StandardCharsets.UTF_8);
-        emailVerificationNotifier.sendEmailVerificationEmail(email, link, rawToken);
+        try {
+            emailVerificationNotifier.sendEmailVerificationEmail(email, link, rawToken);
+        } catch (Exception ex) {
+            tokenRepository.deleteByUserId(userId);
+            auditLogger.log("EMAIL_VERIFICATION_DISPATCH_FAILED", Map.of(
+                    "userId", String.valueOf(userId),
+                    "email", email,
+                    "reason", ex.getMessage()
+            ));
+            throw new UserException.EmailDispatchFailedException("Unable to send verification email. Please try again later.");
+        }
         return expiresAt;
     }
 }
