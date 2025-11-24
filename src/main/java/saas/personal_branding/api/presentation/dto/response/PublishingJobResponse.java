@@ -16,5 +16,6 @@ public record PublishingJobResponse(Long id,
                                     int attemptCount,
                                     PublishingJobStatus status,
                                     String failureReason,
+                                    String failureUserMessage,
                                     String externalPostId) {
 }

@@ -1,5 +1,6 @@
 package saas.personal_branding.api.presentation.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -43,14 +44,15 @@ public class PublishingJobController {
                         job.getMediaAssetIds(),
                         job.getCaption(),
                         job.getScheduledAt(),
-                job.getCreatedAt(),
-                job.getLastTriedAt(),
-                job.getCompletedAt(),
-                job.getAttemptCount(),
-                job.getStatus(),
-                job.getFailureReason(),
-                job.getExternalPostId()
-        ))
+                        job.getCreatedAt(),
+                        job.getLastTriedAt(),
+                        job.getCompletedAt(),
+                        job.getAttemptCount(),
+                        job.getStatus(),
+                        job.getFailureReason(),
+                        mapFailureReason(job.getFailureReason()),
+                        job.getExternalPostId()
+                ))
                 .toList();
         return ResponseEntity.ok(response);
     }
@@ -80,6 +82,7 @@ public class PublishingJobController {
                 job.getAttemptCount(),
                 job.getStatus(),
                 job.getFailureReason(),
+                mapFailureReason(job.getFailureReason()),
                 job.getExternalPostId()
         );
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -131,5 +134,42 @@ public class PublishingJobController {
         }
         publishingJobService.cancel(jobId, "Cancelled by user");
         return ResponseEntity.noContent().build();
+    }
+
+    // TODO: move provider error normalization to a dedicated mapper/service so frontend can rely on `failureUserMessage`.
+    private String mapFailureReason(String failureReason) {
+        if (failureReason == null || failureReason.isBlank()) {
+            return null;
+        }
+
+        String message = failureReason;
+        try {
+            // Some providers return a JSON blob.
+            record ProviderError(String message, String error_user_msg) {}
+            record ErrorEnvelope(ProviderError error, String message) {}
+            ErrorEnvelope parsed = new com.fasterxml.jackson.databind.ObjectMapper().readValue(failureReason, ErrorEnvelope.class);
+            if (parsed.error() != null) {
+                message = parsed.error().error_user_msg() != null ? parsed.error().error_user_msg() : parsed.error().message();
+            } else if (parsed.message() != null) {
+                message = parsed.message();
+            }
+        } catch (Exception ignored) {
+            // fall back to raw string
+        }
+
+        String lower = message.toLowerCase();
+        if (lower.contains("only photo or video")) {
+            return "The platform only accepts photos or videos. Upload a supported media file and try again.";
+        }
+        if (lower.contains("could not be fetched from this uri") || lower.contains("media download has failed")) {
+            return "The media URL could not be fetched. Ensure the link is public, reachable, and in a supported format, then retry.";
+        }
+        if (lower.contains("oauth") && lower.contains("token")) {
+            return "Authorization expired. Please reconnect the account and retry.";
+        }
+        if (message.length() > 220) {
+            return message.substring(0, 220) + "…";
+        }
+        return message;
     }
 }
