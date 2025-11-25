@@ -12,8 +12,8 @@ import org.springframework.web.bind.annotation.RestController;
 import saas.personal_branding.api.application.service.OnboardingService;
 import saas.personal_branding.api.domain.model.Person;
 import saas.personal_branding.api.presentation.dto.request.OnboardingRequest;
-import saas.personal_branding.api.presentation.dto.response.PersonResponse;
-import saas.personal_branding.api.presentation.mapper.UserDtoMapper;
+import saas.personal_branding.api.user.presentation.dto.response.PersonResponse;
+import saas.personal_branding.api.user.presentation.mapper.UserDtoMapper;
 
 @RestController
 @RequestMapping("/api/onboarding")

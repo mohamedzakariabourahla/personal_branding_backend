@@ -7,13 +7,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import saas.personal_branding.api.domain.scheduling.PublishingJob;
-import saas.personal_branding.api.domain.scheduling.PublishingJobQueue;
-import saas.personal_branding.api.domain.scheduling.PublishingJobRepository;
-import saas.personal_branding.api.domain.scheduling.PublishingJobStatus;
-import saas.personal_branding.api.domain.scheduling.PublishingAttempt;
-import saas.personal_branding.api.domain.scheduling.PublishingAttemptRepository;
-import saas.personal_branding.api.domain.scheduling.PublishingAttemptStatus;
+import saas.personal_branding.api.publishing.domain.PublishingJob;
+import saas.personal_branding.api.publishing.domain.PublishingJobQueue;
+import saas.personal_branding.api.publishing.domain.PublishingJobRepository;
+import saas.personal_branding.api.publishing.domain.PublishingJobStatus;
+import saas.personal_branding.api.publishing.domain.PublishingAttempt;
+import saas.personal_branding.api.publishing.domain.PublishingAttemptRepository;
+import saas.personal_branding.api.publishing.domain.PublishingAttemptStatus;
 
 public class PublishingJobService {
 

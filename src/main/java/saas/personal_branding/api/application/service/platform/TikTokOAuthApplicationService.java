@@ -15,16 +15,19 @@ import saas.personal_branding.api.domain.model.PlatformOAuthState;
 import saas.personal_branding.api.domain.platform.PlatformAuthContext;
 import saas.personal_branding.api.domain.repository.PlatformOAuthStateRepository;
 import saas.personal_branding.api.domain.repository.ReferenceDataRepository;
-import saas.personal_branding.api.infrastructure.provider.tiktok.TikTokOAuthProperties;
+import saas.personal_branding.api.publishing.infrastructure.provider.tiktok.TikTokOAuthProperties;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -62,7 +65,7 @@ public class TikTokOAuthApplicationService {
                 .platform(platform)
                 .codeVerifier(codeVerifier)
                 .redirectUri(properties.getRedirectUri())
-                .requestedScopes(properties.getScopes())
+                .requestedScopes(splitScopes(properties.getScopes()))
                 .createdAt(Instant.now())
                 .expiresAt(expiresAt)
                 .build();
@@ -137,7 +140,7 @@ public class TikTokOAuthApplicationService {
     }
 
     private String buildAuthorizationUrl(String state, String codeVerifier) {
-        String scopeParam = String.join(",", properties.getScopes());
+        String scopeParam = String.join(",", splitScopes(properties.getScopes()));
         String codeChallenge = generateCodeChallenge(codeVerifier);
         return UriComponentsBuilder.fromHttpUrl(properties.getAuthBaseUrl())
                 .pathSegment("v2", "auth", "authorize")
@@ -164,5 +167,15 @@ public class TikTokOAuthApplicationService {
         } catch (NoSuchAlgorithmException ex) {
             throw new IllegalStateException("Cannot generate code challenge", ex);
         }
+    }
+
+    private List<String> splitScopes(String scopes) {
+        if (scopes == null || scopes.isBlank()) {
+            return List.of();
+        }
+        return Arrays.stream(scopes.split("[,\\s]+"))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toList());
     }
 }

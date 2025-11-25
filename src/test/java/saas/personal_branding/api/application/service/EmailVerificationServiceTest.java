@@ -52,7 +52,8 @@ class EmailVerificationServiceTest {
                 clock,
                 "http://localhost/verify?token=",
                 tokenTtl,
-                auditLogger
+                auditLogger,
+                0
         );
         
     }

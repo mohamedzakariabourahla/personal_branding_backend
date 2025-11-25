@@ -8,6 +8,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import io.micrometer.core.instrument.MeterRegistry;
@@ -30,11 +31,11 @@ import saas.personal_branding.api.domain.repository.PersonRepository;
 import saas.personal_branding.api.domain.repository.ReferenceDataRepository;
 import saas.personal_branding.api.domain.repository.RefreshTokenRepository;
 import saas.personal_branding.api.domain.repository.UserRepository;
-import saas.personal_branding.api.domain.scheduling.PublishingAttemptRepository;
-import saas.personal_branding.api.domain.scheduling.PublishingJobQueue;
-import saas.personal_branding.api.domain.scheduling.PublishingJobRepository;
-import saas.personal_branding.api.infrastructure.scheduling.InMemoryPublishingJobQueue;
-import saas.personal_branding.api.infrastructure.scheduling.InMemoryPublishingJobRepository;
+import saas.personal_branding.api.publishing.domain.PublishingAttemptRepository;
+import saas.personal_branding.api.publishing.domain.PublishingJobQueue;
+import saas.personal_branding.api.publishing.domain.PublishingJobRepository;
+import saas.personal_branding.api.publishing.infrastructure.scheduling.InMemoryPublishingJobQueue;
+import saas.personal_branding.api.publishing.infrastructure.scheduling.InMemoryPublishingJobRepository;
 import saas.personal_branding.api.infrastructure.security.JwtProperties;
 
 @Configuration
@@ -127,5 +128,11 @@ public class BeanConfig {
     @Bean
     public Clock clock() {
         return Clock.systemUTC();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public RestTemplate restTemplate() {
+        return new RestTemplate();
     }
 }

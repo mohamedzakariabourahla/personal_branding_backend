@@ -15,6 +15,7 @@ import saas.personal_branding.api.application.service.platform.MetaOAuthApplicat
 import saas.personal_branding.api.application.service.platform.TikTokOAuthApplicationService;
 import saas.personal_branding.api.application.service.platform.YouTubeOAuthApplicationService;
 import saas.personal_branding.api.infrastructure.security.ResponseStatusMetricsFilter;
+import saas.personal_branding.api.publishing.presentation.controller.PlatformConnectionController;
 
 import java.util.List;
 

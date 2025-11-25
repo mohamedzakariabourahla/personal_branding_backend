@@ -6,8 +6,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import saas.personal_branding.api.application.service.ReferenceDataService;
 import saas.personal_branding.api.domain.model.*;
-import saas.personal_branding.api.presentation.dto.response.CountryResponse;
-import saas.personal_branding.api.presentation.dto.response.ReferenceDataResponse;
+import saas.personal_branding.api.user.presentation.dto.response.CountryResponse;
+import saas.personal_branding.api.user.presentation.dto.response.ReferenceDataResponse;
 
 import java.util.Comparator;
 import java.util.List;

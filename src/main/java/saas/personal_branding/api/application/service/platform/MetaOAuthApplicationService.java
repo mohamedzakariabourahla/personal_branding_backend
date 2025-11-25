@@ -14,14 +14,16 @@ import saas.personal_branding.api.domain.model.PlatformOAuthState;
 import saas.personal_branding.api.domain.platform.PlatformAuthContext;
 import saas.personal_branding.api.domain.repository.PlatformOAuthStateRepository;
 import saas.personal_branding.api.domain.repository.ReferenceDataRepository;
-import saas.personal_branding.api.infrastructure.provider.meta.MetaOAuthProperties;
+import saas.personal_branding.api.publishing.infrastructure.provider.meta.MetaOAuthProperties;
 
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -58,7 +60,7 @@ public class MetaOAuthApplicationService {
                 .userId(userId)
                 .platform(platform)
                 .redirectUri(properties.getRedirectUri())
-                .requestedScopes(properties.getScopes())
+                .requestedScopes(splitScopes(properties.getScopes()))
                 .createdAt(Instant.now())
                 .expiresAt(expiresAt)
                 .build();
@@ -122,7 +124,7 @@ public class MetaOAuthApplicationService {
                 .accessToken(pageWithInstagram.accessToken())
                 .refreshToken(longToken.accessToken())
                 .tokenType("Bearer")
-                .scopes(properties.getScopes())
+                .scopes(splitScopes(properties.getScopes()))
                 .accessTokenExpiresAt(null)
                 .refreshTokenExpiresAt(longToken.expiresInSeconds() == null ? null : Instant.now().plusSeconds(longToken.expiresInSeconds()))
                 .build();
@@ -166,7 +168,7 @@ public class MetaOAuthApplicationService {
     }
 
     private String buildAuthorizationUrl(String state) {
-        String scopeParam = String.join(",", properties.getScopes());
+        String scopeParam = String.join(",", splitScopes(properties.getScopes()));
         return org.springframework.web.util.UriComponentsBuilder.fromHttpUrl(properties.getAuthBaseUrl())
                 .pathSegment(properties.getApiVersion(), "dialog", "oauth")
                 .queryParam("client_id", properties.getClientId())
@@ -176,5 +178,15 @@ public class MetaOAuthApplicationService {
                 .queryParam("state", state)
                 .build(true)
                 .toUriString();
+    }
+
+    private List<String> splitScopes(String scopes) {
+        if (scopes == null || scopes.isBlank()) {
+            return List.of();
+        }
+        return Arrays.stream(scopes.split("[,\\s]+"))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toList());
     }
 }

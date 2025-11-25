@@ -12,7 +12,7 @@ import saas.personal_branding.api.domain.model.Platform;
 import saas.personal_branding.api.domain.model.PlatformOAuthState;
 import saas.personal_branding.api.domain.repository.PlatformOAuthStateRepository;
 import saas.personal_branding.api.domain.repository.ReferenceDataRepository;
-import saas.personal_branding.api.infrastructure.provider.youtube.YouTubeOAuthProperties;
+import saas.personal_branding.api.publishing.infrastructure.provider.youtube.YouTubeOAuthProperties;
 
 import java.time.Instant;
 import java.util.List;
