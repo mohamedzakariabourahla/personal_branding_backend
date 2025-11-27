@@ -93,10 +93,10 @@ public class AuthController {
                           EmailVerificationRateLimiter emailVerificationRateLimiter,
                           @Value("${security.email-verification.resend-window:PT1M}") Duration verificationResendWindow,
                           @Value("${security.refresh-cookie.name:pb_refresh}") String refreshCookieName,
-                          @Value("${security.refresh-cookie.path:/api/auth}") String refreshCookiePath,
+                          @Value("${security.refresh-cookie.path:/}") String refreshCookiePath,
                           @Value("${security.refresh-cookie.domain:}") String refreshCookieDomain,
-                          @Value("${security.refresh-cookie.secure:false}") boolean refreshCookieSecure,
-                          @Value("${security.refresh-cookie.same-site:Lax}") String refreshCookieSameSite,
+                          @Value("${security.refresh-cookie.secure:true}") boolean refreshCookieSecure,
+                          @Value("${security.refresh-cookie.same-site:None}") String refreshCookieSameSite,
                           @Value("${security.refresh-cookie.max-age:P7D}") Duration refreshCookieMaxAge,
                           Clock clock) {
         this.registerUserUseCase = registerUserUseCase;
